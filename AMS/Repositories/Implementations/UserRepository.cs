@@ -12,7 +12,7 @@ namespace Repositories.Implementations
         {
             _conn = conn;
         }
-        public async Task<List<t_Employee>> LoginUser(vm_Login login)
+        public async Task<t_Employee> LoginUser(vm_login login)
         {
             var userData = new t_Employee();
 
@@ -24,8 +24,8 @@ namespace Repositories.Implementations
 
             using var cmd = new NpgsqlCommand(qry, _conn);
 
-            cmd.Parameters.AddWithValue("@c_email", Email ?? "");
-            cmd.Parameters.AddWithValue("@c_password", Password ?? "");
+            cmd.Parameters.AddWithValue("@c_email", login.UserEmail ?? "");
+            cmd.Parameters.AddWithValue("@c_password", login.UserPassword ?? "");
 
             await _conn.OpenAsync();
             using var reader = await cmd.ExecuteReaderAsync();
@@ -48,7 +48,7 @@ namespace Repositories.Implementations
             await _conn.CloseAsync();
         }
 
-        return new List<t_Employee> { userData };
+        return userData;
         }
 
         public async Task<int> RegisterUser(t_Employee employee)
