@@ -39,10 +39,10 @@ namespace MyApp.Namespace
             t_Employee UserData = await _empRepo.LoginUser(login);
             if (ModelState.IsValid)
             {
-                if (UserData.c_UserId != 0)
+                if (UserData.EmployeeId != 0)
                 {
                     HttpContext.Session.SetInt32("EmployeeId", UserData.EmployeeId);
-                    HttpContext.Session.SetString("EmployeeName", UserData.EmployeeName);
+                    HttpContext.Session.SetString("EmployeeName", UserData.Name);
 
                     // return RedirectToAction("Index", "Contact");
                     // return RedirectToAction("Index","ContactSingle");
@@ -56,29 +56,29 @@ namespace MyApp.Namespace
         }
 
         [HttpPost]
-        public async Task<IActionResult> Register(t_User emp)
+        public async Task<IActionResult> Register(t_Employee emp)
         {
             if(ModelState.IsValid)
         {
-            if (emp.ProfilePicture != null && emp.ProfilePicture.Length > 0)
+            if (emp.ImageFile != null && emp.ImageFile.Length > 0)
             {
                 var uploads = Path.Combine(Directory.GetCurrentDirectory(), "..", "MVC", "wwwroot", "profile_images");
 
                 if (!Directory.Exists(uploads))
                     Directory.CreateDirectory(uploads);
 
-                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(emp.ProfilePicture.FileName);
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(emp.ImageFile.FileName);
                 var filePath = Path.Combine(uploads, fileName);
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    await emp.ProfilePicture.CopyToAsync(stream);
+                    await emp.ImageFile.CopyToAsync(stream);
                 }
 
-                emp.c_Image = fileName;
+                emp.Image = fileName;
             }
-            Console.WriteLine("user.c_fname: " + emp.c_UserName);
-            var status = await _userRepo.Register(emp);
+            Console.WriteLine("user.c_fname: " + emp.Name);
+            var status = await _empRepo.RegisterUser(emp);
             if(status == 1)
             {
                 ViewData["message"] = "User Registred";
