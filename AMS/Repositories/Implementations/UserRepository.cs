@@ -12,7 +12,7 @@ namespace Repositories.Implementations
         {
             _conn = conn;
         }
-        public async Task<List<t_Employee>> LoginUser(string Email, string Password)
+        public async Task<List<t_Employee>> LoginUser(vm_Login login)
         {
             var userData = new t_Employee();
 
@@ -48,7 +48,7 @@ namespace Repositories.Implementations
             await _conn.CloseAsync();
         }
 
-        return userData;
+        return new List<t_Employee> { userData };
         }
 
         public async Task<int> RegisterUser(t_Employee employee)
