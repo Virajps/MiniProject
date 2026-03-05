@@ -39,3 +39,5 @@ Thumbs.db
 
 # Keep static web assets tracked in this repo
 !MVC/wwwroot/lib/
+
+.fake
