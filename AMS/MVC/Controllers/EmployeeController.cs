@@ -1,0 +1,16 @@
+using Microsoft.AspNetCore.Mvc;
+
+namespace MyApp.Namespace
+{
+    public class EmployeeController : Controller
+    {
+        // GET: EmployeeController
+        public ActionResult Index()
+        {
+            return View();
+        }
+
+        
+
+    }
+}
