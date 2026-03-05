@@ -1,7 +1,22 @@
+using Repositories.Implementations;
+using Repositories.Interfaces;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<IUserInterface, UserRepository>();
+builder.Services.AddScoped<IEmployeeInterface, EmployeeRepository>();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+builder.Services.AddControllers();
+
+builder.Services.AddScoped<Npgsql.NpgsqlConnection>(_ =>
+    new Npgsql.NpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
@@ -17,6 +32,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseSession();
+app.MapControllers();
 
 app.UseAuthorization();
 
