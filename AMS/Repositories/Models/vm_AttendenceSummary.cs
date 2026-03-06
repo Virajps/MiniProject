@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Repositories.Models;
-using static Repositories.Models.t_Attendence;
 namespace Repositories.Models;
 
 public class vm_AttendenceSummary
@@ -18,8 +17,8 @@ public class vm_AttendenceSummary
         public int EarlyOutCount { get; set; }
 
         public List<vm_TaskSummary> TaskSummaries { get; set; } = new();
-        public List<t_Attendance> AttendanceHistory { get; set; } = new();
+        public List<t_Attendence> AttendanceHistory { get; set; } = new();
 
         // For today's attendance
-        public t_Attendance? TodayRecord { get; set; }
+        public t_Attendence? TodayRecord { get; set; }
 }

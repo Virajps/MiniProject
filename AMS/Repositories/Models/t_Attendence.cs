@@ -1,9 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
 namespace Repositories.Models;
-
-public class t_Attendence
-{
     public class t_Attendance
     {
         public int AttendId { get; set; }
@@ -48,4 +45,3 @@ public class t_Attendence
                 : "--:--";
     }
 
-}
