@@ -3,6 +3,7 @@ bin/
 obj/
 out/
 publish/
+AMS/MVC/DataProtection-Keys
 
 # IDE/editor
 .vs/
