@@ -30,7 +30,6 @@ namespace Repositories.Models
 
         public IFormFile? ImageFile { get; set; }
 
-        [Required]
         public string? Role { get; set; }
     }
 }
