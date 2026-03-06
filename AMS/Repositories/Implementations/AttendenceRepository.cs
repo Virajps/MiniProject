@@ -139,5 +139,103 @@ namespace Repositories.Implementations
                 TaskType = r["c_tasktype"]?.ToString()
             };
         }
+
+        public async Task<vm_AttendanceChartResult> GetAttendanceChart(int empId, string type, DateTime date)
+        {
+            var result = new vm_AttendanceChartResult();
+
+            DateTime start;
+            DateTime end;
+            string query = "";
+
+            if (type == "year")
+            {
+                start = new DateTime(date.Year, 1, 1);
+                end = start.AddYears(1);
+
+                query = @"
+                            SELECT 
+                                TO_CHAR(c_attenddate,'Mon') AS label,
+                                SUM(c_workinghour) AS hours
+                            FROM t_attendance
+                            WHERE c_empid=@id
+                            AND c_attenddate>=@start
+                            AND c_attenddate<@end
+                            GROUP BY EXTRACT(MONTH FROM c_attenddate),label
+                            ORDER BY EXTRACT(MONTH FROM c_attenddate)";
+            }
+
+            else if (type == "month")
+            {
+                start = new DateTime(date.Year, date.Month, 1);
+                end = start.AddMonths(1);
+
+                query = @"
+                    SELECT 
+                        EXTRACT(DAY FROM c_attenddate) AS label,
+                        SUM(c_workinghour) AS hours
+                    FROM t_attendance
+                    WHERE c_empid=@id
+                    AND c_attenddate>=@start
+                    AND c_attenddate<@end
+                    GROUP BY label
+                    ORDER BY label";
+            }
+
+            else
+            {
+                start = date.AddDays(-(int)date.DayOfWeek);
+                end = start.AddDays(7);
+
+                query = @"
+                    SELECT 
+                        TO_CHAR(c_attenddate,'Dy') AS label,
+                        SUM(c_workinghour) AS hours
+                    FROM t_attendance
+                    WHERE c_empid=@id
+                    AND c_attenddate>=@start
+                    AND c_attenddate<@end
+                    GROUP BY label,c_attenddate
+                    ORDER BY c_attenddate";
+            }
+
+            try
+            {
+                await _conn.CloseAsync();
+
+                using var cmd = new NpgsqlCommand(query, _conn);
+
+                cmd.Parameters.AddWithValue("@id", empId);
+                cmd.Parameters.AddWithValue("@start", start);
+                cmd.Parameters.AddWithValue("@end", end);
+
+                await _conn.OpenAsync();
+
+                using var r = await cmd.ExecuteReaderAsync();
+
+                while (await r.ReadAsync())
+                {
+                    int hours = Convert.ToInt32(r["hours"]);
+
+                    result.ChartData.Add(new vm_AttendanceChart
+                    {
+                        Label = r["label"].ToString(),
+                        Hours = hours
+                    });
+
+                    result.TotalHours += hours;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
+
+            return result;
+        }
     }
 }
