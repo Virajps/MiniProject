@@ -145,6 +145,7 @@ namespace MyApp.Namespace
             }
         }
 
+        [HttpPost]
         public async Task<IActionResult> AttendanceChart(string type, DateTime date)
         {
             int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
