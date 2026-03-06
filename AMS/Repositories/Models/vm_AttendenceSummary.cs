@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Repositories.Models;
-using static Repositories.Models.t_Attendence;
 namespace Repositories.Models;
 
 public class vm_AttendenceSummary
