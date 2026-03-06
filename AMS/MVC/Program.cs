@@ -1,9 +1,7 @@
 using Repositories.Implementations;
 using Repositories.Interfaces;
-using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
-var dataProtectionPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
