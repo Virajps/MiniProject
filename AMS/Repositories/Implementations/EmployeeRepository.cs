@@ -134,6 +134,8 @@ namespace Repositories.Implementations
             {
                 await _conn.CloseAsync();
             }
+            return false;
+        }
 
         public async Task<bool> UpdateUserStatus(int employeeId, string status)
         {
