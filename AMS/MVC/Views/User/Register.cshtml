@@ -198,7 +198,7 @@ RegisterData.append("Gender", e.model.gender);
 let upload=$("#profileUpload").data("kendoUpload");
 let file=upload.getFiles()[0];
 if (file) {
-    RegisterData.append("ImageFile", file); // Append the file
+    RegisterData.append("ImageFile", file.rawFile); // Append the file
 }
 
 for (let [key, value] of RegisterData.entries()) {
