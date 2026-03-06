@@ -109,5 +109,41 @@ namespace Repositories.Implementations
         {
             throw new NotImplementedException();
         }
+
+        public Task<int> UpdateUserStatus(int EmployeeId, string Status)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<int> ChangePassword(vm_ChangePassword changePassword)
+        {
+             try
+        {
+            var query = changePassword.Image is null
+                ? "UPDATE t_employee SET c_name = @name WHERE c_empid = @empid"
+                : "UPDATE t_employee SET c_name = @name, c_profileimage = @profileimage WHERE c_empid = @empid";
+
+            using var cmd = new NpgsqlCommand(query, _conn);
+            cmd.Parameters.AddWithValue("@name", changePassword.Name);
+            cmd.Parameters.AddWithValue("@empid", changePassword.EmployeeId);
+            if (changePassword.Image is not null)
+            {
+                cmd.Parameters.AddWithValue("@profileimage", changePassword.Image);
+            }
+
+            await _conn.OpenAsync();
+            var rows = await cmd.ExecuteNonQueryAsync();
+            return rows > 0 ? 1 : 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("UpdateProfile Error: " + ex.Message);
+            return 0;
+        }
+        finally
+        {
+            await _conn.CloseAsync();
+        }
+        }
     }
 }

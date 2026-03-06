@@ -11,4 +11,6 @@ public class vm_login
     public string? UserPassword { get; set; }
 
     public string? UserRole { get; set; }
+
+    public string? Status { get; set; }
 }
