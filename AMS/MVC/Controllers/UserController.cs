@@ -33,6 +33,8 @@ namespace MyApp.Namespace
             return View();
         }
 
+        
+
         [HttpPost]
         public async Task<IActionResult> Login(vm_login login)
         {
