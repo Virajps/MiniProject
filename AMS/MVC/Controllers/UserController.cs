@@ -43,9 +43,17 @@ namespace MyApp.Namespace
                 {
                     HttpContext.Session.SetInt32("EmployeeId", UserData.EmployeeId);
                     HttpContext.Session.SetString("EmployeeName", UserData.Name);
-
-                    // return RedirectToAction("Index", "Contact");
-                    // return RedirectToAction("Index","ContactSingle");
+                    if(login.UserRole == "Admin")
+                    {
+                        return RedirectToAction("Dashboard","Admin");
+                    }
+                    else
+                    {
+                        if(login.Status == "Active")
+                        {
+                            return RedirectToAction("Dashboard","Employee");
+                        }
+                    }
                 }
                 else
                 {
