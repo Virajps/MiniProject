@@ -13,15 +13,16 @@ namespace Repositories.Implementations
         }
         public async Task<int> DeleteUser(int EmployeeId)
         {
-            try{
-            var cmd = new NpgsqlCommand("DELETE FROM t_employee WHERE c_empid = @EmployeeId", _conn);
-            cmd.Parameters.AddWithValue("@EmployeeId", EmployeeId);
-            await _conn.OpenAsync();
-            await cmd.ExecuteNonQueryAsync();
-            await _conn.CloseAsync();
-            return 1;
+            try
+            {
+                var cmd = new NpgsqlCommand("DELETE FROM t_employee WHERE c_empid = @EmployeeId", _conn);
+                cmd.Parameters.AddWithValue("@EmployeeId", EmployeeId);
+                await _conn.OpenAsync();
+                await cmd.ExecuteNonQueryAsync();
+                await _conn.CloseAsync();
+                return 1;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine("DeleteUser Error: " + ex.Message);
                 return 0;
@@ -105,45 +106,36 @@ namespace Repositories.Implementations
             return null;
         }
 
-        public async Task<t_Employee> UpdateUser(int EmployeeId, t_Employee employee)
+        public async Task<bool> UpdateUser(int EmployeeId, t_Employee employee)
         {
-            var employees = new List<t_Employee>();
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "UPDATE t_employee SET c_name = @name, c_gender = @gender, c_role = @role, c_image = @image WHERE c_empid = @empid",
+                    "UPDATE t_employee SET c_name=@name, c_gender=@gender, c_image=@image WHERE c_empid=@empid",
                     _conn);
+
                 cmd.Parameters.AddWithValue("@empid", EmployeeId);
                 cmd.Parameters.AddWithValue("@name", employee.Name ?? "");
                 cmd.Parameters.AddWithValue("@gender", employee.Gender ?? "");
                 cmd.Parameters.AddWithValue("@image", employee.Image ?? "");
 
                 await _conn.OpenAsync();
-                using var reader = await cmd.ExecuteReaderAsync();
-                if (await reader.ReadAsync())
-                {
-                    return new t_Employee
-                    {
-                        EmployeeId = reader.GetInt32(reader.GetOrdinal("c_empid")),
-                        Name = reader["c_name"]?.ToString(),
-                        Email = reader["c_email"]?.ToString(),
-                        Role = reader["c_role"]?.ToString(),
-                        Image = reader["c_image"]?.ToString(),
-                        Status = reader["c_status"]?.ToString()
-                    };
-                }
+
+                int rows = await cmd.ExecuteNonQueryAsync();
+
+                return rows > 0;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("GetEmployeeProfileById Error: " + ex.Message);
+                Console.WriteLine("UpdateUser Error: " + ex.Message);
             }
             finally
             {
                 await _conn.CloseAsync();
             }
-            return null;
-        }
 
+            return false;
+        }
         public async Task<t_Employee> UpdateUserStatus(int EmployeeId, string Status)
         {
             var employees = new List<t_Employee>();
