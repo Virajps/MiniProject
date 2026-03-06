@@ -4,12 +4,12 @@ namespace Repositories.Interfaces
 {
     public interface IEmployeeInterface
     {
-        public Task<t_Employee> GetAllUsers();
+        public Task<List<t_Employee>> GetAllUsers();
 
         public Task<t_Employee> GetUserById(int EmployeeId);
 
         public Task<t_Employee> UpdateUser(int EmployeeId, t_Employee employee);
 
-        public Task DeleteUser(int EmployeeId);
+        public Task<int> DeleteUser(int EmployeeId);
     }
 }
