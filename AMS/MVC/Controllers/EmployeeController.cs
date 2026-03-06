@@ -12,10 +12,11 @@ namespace MyApp.Namespace
         private readonly IWebHostEnvironment _env;
         private readonly IEmployeeInterface _employee;
         // GET: EmployeeController
-        public EmployeeController(IWebHostEnvironment env, IEmployeeInterface employee)
+        public EmployeeController(IWebHostEnvironment env, IEmployeeInterface employee, IAttendenceInterface repo)
         {
             _env = env;
             _employee = employee;
+            _repo = repo;
         }
 
         public ActionResult Index()
@@ -25,6 +26,38 @@ namespace MyApp.Namespace
         public ActionResult Dashboard()
         {
             return View();
+        }
+        [HttpPost]
+        public async Task<IActionResult> ClockIn(string workType)
+        {
+            int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
+
+            var result = await _repo.ClockIn(empId, workType);
+
+            if (result == 1)
+                return Ok(new { success = true, message = "Clock-In successful" });
+
+            if (result == 0)
+                return Ok(new { success = false, message = "Already clocked in today" });
+
+            return Ok(new { success = false, message = "Clock-In failed" });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ClockOut(List<string> taskTypes)
+        {
+            int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
+            // int empId = 22;
+
+            var result = await _repo.ClockOut(empId, taskTypes);
+
+            if (result == 1)
+                return Ok(new { success = true, message = "Clock-Out successful" });
+
+            if (result == -2)
+                return Ok(new { success = false, message = "Already clocked out today" });
+
+            return Ok(new { success = false, message = "Clock-Out failed" });
         }
         [HttpPut]
         public async Task<IActionResult> ChangePassword(vm_ChangePassword changePassword)
@@ -145,14 +178,45 @@ namespace MyApp.Namespace
             }
         }
 
+        [HttpGet]
         public async Task<IActionResult> AttendanceChart(string type, DateTime date)
         {
-            int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
+            // int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
+            int empId = 22;
 
             var data = await _repo.GetAttendanceChart(empId, type, date);
 
-            return Json(data);
+            if (data != null)
+            {
+                return Json(data);
+            }
+            else
+            {
+                return BadRequest(new { success = false, message = "Failed to Load Chart" });
+            }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Scheduler()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAttendanceScheduler()
+        {
+            int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
+
+            var data = await _repo.GetAttendanceScheduler(empId);
+
+            if (data != null)
+            {
+                return Json(data);
+            }
+            else
+            {
+                return BadRequest(new { success = false, message = "Failed to Load History" });
+            }
+        }
     }
 }

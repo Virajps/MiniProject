@@ -3,7 +3,7 @@ using Repositories.Models;
 namespace Repositories.Models;
 
 public class vm_AttendenceSummary
-{ 
+{
   public int EmpId { get; set; }
   public string? Name { get; set; }
   public string? Image { get; set; }
@@ -25,12 +25,31 @@ public class vm_AttendenceSummary
 
 public class vm_AttendanceChart
 {
-    public string? Label { get; set; }
-    public int Hours { get; set; }
+  public string? Label { get; set; }
+  public int Hours { get; set; }
 }
 
 public class vm_AttendanceChartResult
 {
-    public int TotalHours { get; set; }
-    public List<vm_AttendanceChart> ChartData { get; set; } = new();
+  public int TotalHours { get; set; }
+  public List<vm_AttendanceChart> ChartData { get; set; } = new();
+}
+
+public class vm_AttendanceScheduler
+{
+  public int Id { get; set; }
+
+  public string? Title { get; set; }
+
+  public DateTime Start { get; set; }
+
+  public DateTime End { get; set; }
+
+  public string? Status { get; set; }
+
+  public string? WorkType { get; set; }
+
+  public string? TaskType { get; set; }
+
+  public int WorkingHour { get; set; }
 }
