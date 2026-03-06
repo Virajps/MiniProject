@@ -53,14 +53,33 @@ namespace MyApp.Namespace
                         {
                             return RedirectToAction("Dashboard","Employee");
                         }
+                        else
+                        {
+                            return Json(new { success = false, message = "Employee is Inactive" });
+                        }
                     }
                 }
                 else
                 {
-                    ViewData["message"] = "Invali Employee And Password";
+                    return Json(new { success = false, message = "Invalid Employee And Password" });
                 }
             }
-            return View(login);
+            else
+            {
+               var errors = ModelState
+                    .Where(x => x.Value.Errors.Count > 0)
+                    .ToDictionary(
+                        k => k.Key,
+                        v => v.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
+
+                return Json(new
+                {
+                    success = false,
+                    errors = errors
+                }); 
+            }
+            
         }
 
         [HttpPost]
@@ -89,20 +108,33 @@ namespace MyApp.Namespace
             var status = await _empRepo.RegisterUser(emp);
             if(status == 1)
             {
-                ViewData["message"] = "User Registred";
-                return RedirectToAction("Login");
+                return Json(new { success = true, message = "Registration Successful" });
             }
             else if (status == 0)
             {
-                ViewData["message"] = "User Already Registred";
+                return Json(new { success = false, message = "Already Registered" });
             }
             else
             {
-                ViewData["message"] = "There was some error while Registration"; 
+               return Json(new { success = false, message = "error " }); 
             }
-        }
+            }
+            else
+            {
+                var errors = ModelState
+                    .Where(x => x.Value.Errors.Count > 0)
+                    .ToDictionary(
+                        k => k.Key,
+                        v => v.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
+
+                return Json(new
+                {
+                    success = false,
+                    errors = errors
+                });
+            }
         
-        return View();
         }
     }
 }

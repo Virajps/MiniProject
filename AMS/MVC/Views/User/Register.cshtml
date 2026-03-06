@@ -1,3 +1,6 @@
+@{
+    ViewData["Title"] = "Registration";
+}
 <div class="card shadow-lg">
 
 <div class="card-body">
@@ -19,7 +22,7 @@ class="profile-img">
 
 </div>
 
-<input id="profileUpload" type="file" name="profileImage"/>
+<input id="profileUpload" type="file" name="ImageFile"/>
 
 <div id="imageError" class="text-danger k-form-error mt-2" style="font-size:14px;"></div>
 
@@ -29,14 +32,13 @@ class="profile-img">
 
 <div class="text-center mt-3">
 <span class="text-muted">Already have an account?</span>
-<a href="/User/Login" class="fw-bold text-decoration-none">Login</a>
+<a asp-action="Login" asp-controller="User" class="redirect fw-bold text-decoration-none">Login</a>
 </div>
 
 </div>
 </div>
 
 @section Scripts{
-
 <script>
 
 $(document).ready(function(){
@@ -188,31 +190,46 @@ return;
 
 }
 
-
-let formdata=new FormData($("#form")[0]);
-
+const RegisterData = new FormData();
+RegisterData.append("Name", e.model.name);
+RegisterData.append("Email", e.model.email);
+RegisterData.append("Password", e.model.password);
+RegisterData.append("Gender", e.model.gender);
 let upload=$("#profileUpload").data("kendoUpload");
 let file=upload.getFiles()[0];
-
-if(file){
-formdata.append("profileImage",file.rawFile);
+if (file) {
+    RegisterData.append("ImageFile", file); // Append the file
 }
 
-
-/* AJAX */
+for (let [key, value] of RegisterData.entries()) {
+    console.log(key, value);
+}
 
 $.ajax({
 
 url:"/User/Register",
 type:"POST",
-data:formdata,
+data:RegisterData,
 contentType:false,
 processData:false,
 
 success:function(res){
+    if(res.success){
+        Swal.fire({
+            title: "Success!",
+            text: res.message,
+            icon: "success"
+        }).then( ()=>{
+            window.location.href = "/User/Login";
+        });
+    }else{
+        Swal.fire({
+            title: "Oops!",
+            text: res.message,
+            icon: "error"
+        });
+    }
 
-alert("Registration Successful");
-console.log(res)
 }
 
 });
