@@ -39,7 +39,7 @@ namespace Repositories.Implementations
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "SELECT c_empid, c_name, c_email, c_role, c_image FROM t_employee ORDER BY c_empid",
+                    "SELECT c_empid, c_name, c_email, c_role, c_image, c_status FROM t_employee ORDER BY c_empid",
                     _conn);
 
                 await _conn.OpenAsync();
@@ -75,7 +75,7 @@ namespace Repositories.Implementations
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "SELECT c_empid, c_name, c_email, c_role, c_image FROM t_employee WHERE c_empid = @empid",
+                    "SELECT c_empid, c_name, c_email, c_role, c_image, c_status FROM t_employee WHERE c_empid = @empid",
                     _conn);
                 cmd.Parameters.AddWithValue("@empid", EmployeeId);
 
@@ -97,6 +97,7 @@ namespace Repositories.Implementations
             catch (Exception ex)
             {
                 Console.WriteLine("GetEmployeeProfileById Error: " + ex.Message);
+                return null;
             }
             finally
             {

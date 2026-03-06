@@ -44,17 +44,22 @@ namespace MyApp.Namespace
         [HttpGet]
         public async Task<IActionResult> GetUserById(int EmployeeId)
         {
-            try
-            {
-                var result = await _employee.GetUserById(EmployeeId);
+            
+            var result = await _employee.GetUserById(EmployeeId);
+            if(result !=null){
                 System.Console.WriteLine("User data fetched"+EmployeeId);
                 return Ok(new{success=true, data=result});
             }
-            catch(Exception ex)
+            else if(result == null)
+            {
+                return Ok(new{success=false, message="Data not fetched"});
+            }
+            else
             {
                 return Ok(new{success=false, message="Internal Server Error while GetUserById"});
             }
 
+                
         }
         [HttpDelete]
         public async Task<IActionResult> DeleteUser(int EmployeeId)
@@ -73,7 +78,7 @@ namespace MyApp.Namespace
                 return BadRequest(new{success=false, message="Error while deleting employee"});
             }
         }
-
+        [HttpGet]
         public async Task<IActionResult> GetAllUsers()
         {
             try
@@ -119,10 +124,12 @@ namespace MyApp.Namespace
             }
 
         }
-
+        [HttpPut]
         public async Task<IActionResult> UpdateUserStatus(int EmployeeId, string Status)
         {
+            System.Console.WriteLine(EmployeeId+""+Status);
             var result = await _employee.UpdateUserStatus(EmployeeId, Status);
+            System.Console.WriteLine(result);
 
             if(result != null)
             {
