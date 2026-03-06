@@ -1,24 +1,27 @@
 ﻿using Npgsql;
 using Repositories.Interfaces;
+using Repositories.Models;
 
-namespace Repositories.Implementations;
 
-public class AttendenceRepository : IAttendenceInterface
+namespace Repositories.Implementations
 {
-    private readonly NpgsqlConnection _conn;
-    public AttendenceRepository(NpgsqlConnection conn)
+
+    public class AttendenceRepository : IAttendenceInterface
     {
-        _conn = conn;
-    }
-     public async Task<List<vm_TaskSummary>>GetEmployeeTaskSummary(int EmployeeId)
+        private readonly NpgsqlConnection _conn;
+        public AttendenceRepository(NpgsqlConnection conn)
         {
-            var list =new List<vm_TaskSummary>();
+            _conn = conn;
+        }
+        public async Task<List<vm_TaskSummary>> GetEmployeeTaskSummary(int EmployeeId)
+        {
+            var list = new List<vm_TaskSummary>();
 
             try
             {
                 await _conn.CloseAsync();
 
-                using var cmd=new NpgsqlCommand(@"
+                using var cmd = new NpgsqlCommand(@"
                 SELECT 
                     task,
                     SUM(c_workinghour/task_count) AS hours
@@ -35,8 +38,8 @@ public class AttendenceRepository : IAttendenceInterface
 
                 cmd.Parameters.AddWithValue("@empid", EmployeeId);
                 await _conn.OpenAsync();
-                using var r=await cmd.ExecuteReaderAsync();
-                while(await r.ReadAsync())
+                using var r = await cmd.ExecuteReaderAsync();
+                while (await r.ReadAsync())
                 {
                     list.Add(new vm_TaskSummary
                     {
@@ -45,7 +48,7 @@ public class AttendenceRepository : IAttendenceInterface
                     });
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine("GetEmployeeTaskSummary Error: " + ex.Message);
             }
@@ -56,4 +59,67 @@ public class AttendenceRepository : IAttendenceInterface
 
             return list;
         }
+
+        public async Task<vm_AttendenceSummary> GetEmployeeAttendanceSummary(int employeeId)
+        {
+            var summary = new vm_AttendenceSummary();
+
+            try
+            {
+                await _conn.CloseAsync();
+
+                using var cmd = new NpgsqlCommand(@"
+            SELECT 
+                COUNT(*) AS present_days,
+                COALESCE(SUM(c_workinghour),0) AS total_hours,
+                COUNT(CASE WHEN c_attendstatus='LateIn' THEN 1 END) AS late_in,
+                COUNT(CASE WHEN c_attendstatus='EarlyOut' THEN 1 END) AS early_out
+            FROM t_attendance
+            WHERE c_empid=@id;", _conn);
+
+                cmd.Parameters.AddWithValue("@id", employeeId);
+
+                await _conn.OpenAsync();
+
+                using var r = await cmd.ExecuteReaderAsync();
+
+                if (await r.ReadAsync())
+                {
+                    summary.PresentCount = Convert.ToInt32(r["present_days"]);
+                    summary.TotalWorkingHours = Convert.ToInt32(r["total_hours"]);
+                    summary.LateInCount = Convert.ToInt32(r["late_in"]);
+                    summary.EarlyOutCount = Convert.ToInt32(r["early_out"]);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
+
+            return summary;
+        }
+
+        public async Task<t_Attendence?> GetTodayAttendance(int empId)
+        {
+            t_Attendence? att = null;
+            try
+            {
+                await _conn.CloseAsync();
+                using var cmd = new NpgsqlCommand(
+                    "SELECT * FROM t_attendance WHERE c_empid=@id AND c_attenddate=@today", _conn);
+                cmd.Parameters.AddWithValue("@id", empId);
+                cmd.Parameters.AddWithValue("@today", DateTime.Today);
+                await _conn.OpenAsync();
+                using var r = await cmd.ExecuteReaderAsync();
+                if (await r.ReadAsync()) att = MapRow(r);
+            }
+            catch (Exception ex) { Console.WriteLine(ex.Message); }
+            finally { await _conn.CloseAsync(); }
+            return att;
+        }
+    }
 }
