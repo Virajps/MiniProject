@@ -37,6 +37,7 @@ namespace Repositories.Implementations
                 userData.Email = reader["c_email"]?.ToString();
                 userData.Role = reader["c_role"]?.ToString();
                 userData.Image = reader["c_image"]?.ToString();
+                userData.Status = reader["c_status"]?.ToString();
             }
         }
         catch (Exception ex)
