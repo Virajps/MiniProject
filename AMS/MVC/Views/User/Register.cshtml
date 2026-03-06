@@ -19,7 +19,12 @@
 </div>
 
 <form id="form"></form>
-
+<div class="text-center mt-3">
+    <span class="text-muted">Already have an account?</span>
+    <a href="User/Login" class="redirect fw-bold text-decoration-none">
+        Login
+    </a>
+</div>
 </div>
 </div>
 
@@ -152,7 +157,7 @@ formdata.append("profileImage",$("#profileImageInput")[0].files[0]);
 
 $.ajax({
 
-url:"/Home/Register",
+url:"/User/Register",
 type:"POST",
 data:formdata,
 contentType:false,

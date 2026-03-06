@@ -77,3 +77,18 @@ body{
     display:flex;
     gap:20px;
 }
+.redirect{
+    display:inline-block;
+    font-weight:600;
+    text-decoration:none;
+
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+
+    transition: transform 0.3s ease;
+}
+
+.redirect:hover{
+    transform: scale(1.2);
+}
