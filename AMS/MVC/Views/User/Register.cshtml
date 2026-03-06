@@ -1,0 +1,228 @@
+<div class="card shadow-lg">
+
+<div class="card-body">
+
+<h4 class="form-title text-center mb-4">Create Account</h4>
+
+<!-- PROFILE IMAGE -->
+<div class="profile-container">
+
+<div class="profile-wrapper">
+
+<img id="preview"
+src="https://cdn-icons-png.flaticon.com/512/847/847969.png"
+class="profile-img">
+
+<div class="upload-icon">
+<span class="k-icon k-i-camera"></span>
+</div>
+
+</div>
+
+<input id="profileUpload" type="file" name="profileImage"/>
+
+<div id="imageError" class="text-danger k-form-error mt-2" style="font-size:14px;"></div>
+
+</div>
+
+<form id="form"></form>
+
+<div class="text-center mt-3">
+<span class="text-muted">Already have an account?</span>
+<a href="/User/Login" class="fw-bold text-decoration-none">Login</a>
+</div>
+
+</div>
+</div>
+
+@section Scripts{
+
+<script>
+
+$(document).ready(function(){
+
+let imageSelected=false;
+
+
+/* KENDO UPLOAD */
+
+$("#profileUpload").kendoUpload({
+
+async:{
+autoUpload:false
+},
+
+multiple:false,
+showFileList:false,
+
+select:function(e){
+
+const file=e.files[0].rawFile;
+
+if(file){
+
+imageSelected=true;
+$("#imageError").text("");
+
+const reader=new FileReader();
+
+reader.onload=function(event){
+
+$("#preview").attr("src",event.target.result);
+
+};
+
+reader.readAsDataURL(file);
+
+}
+
+}
+
+});
+
+
+/* CLICK PROFILE IMAGE */
+
+$(".profile-wrapper").click(function(){
+
+$("#profileUpload").click();
+
+});
+
+
+/* KENDO FORM */
+
+$("#form").kendoForm({
+
+formData:{
+name:"",
+email:"",
+password:"",
+gender:""
+},
+
+validatable:{
+validateOnBlur:true,
+validationSummary:false,
+errorTemplate:"<span class='k-form-error'>#:message#</span>"
+},
+
+items:[
+
+{
+field:"name",
+label:"Full Name",
+editor:"TextBox",
+validation:{
+required:{message:"Full name is required."}
+},
+editorOptions:{
+placeholder:"Enter your full name"
+}
+},
+
+{
+field:"email",
+label:"Email",
+editor:"TextBox",
+validation:{
+required:{message:"Email address is required."},
+email: { message: "Please enter a valid email address." }
+},
+editorOptions:{
+placeholder:"Enter your email address"
+}
+},
+
+{
+field:"password",
+label:"Password",
+editor:"TextBox",
+validation: {
+        required: { message: "Password is required." },
+    },
+attributes:{
+type:"password",
+placeholder:"Enter your password",
+}
+},
+
+{
+                field: "gender",
+                label: "Gender:",
+                editor: function (container, options) {
+                    const genderOptions = [
+                        { value: "Male", label: "Male" },
+                        { value: "Female", label: "Female" },
+                        { value: "Other", label: "Other" }
+                    ];
+                    $('<div class="k-radio-group"></div>')
+                    .appendTo(container);
+                    genderOptions.forEach((option,index) => {
+                        $('<label class="k-radio-label"></label>')
+                        .append(
+                        $('<input type="radio" style="margin:5px" name="' + options.field + '" value="' + option.value + '" '+(index === genderOptions.length - 1 ? 'required' : '')+' />')
+                        )
+                        .append(option.label)
+                        .appendTo(container.find(".k-radio-group"));
+                    });
+                },
+                
+                validation: { required: { message: "Please select your gender." } },
+            },
+
+],
+
+buttonsTemplate:
+'<button class="btn btn-primary submit-btn mt-3">Register</button>',
+
+
+submit:function(e){
+
+e.preventDefault();
+
+if(!imageSelected){
+
+$("#imageError").text("Profile image is required");
+return;
+
+}
+
+
+let formdata=new FormData($("#form")[0]);
+
+let upload=$("#profileUpload").data("kendoUpload");
+let file=upload.getFiles()[0];
+
+if(file){
+formdata.append("profileImage",file.rawFile);
+}
+
+
+/* AJAX */
+
+$.ajax({
+
+url:"/User/Register",
+type:"POST",
+data:formdata,
+contentType:false,
+processData:false,
+
+success:function(res){
+
+alert("Registration Successful");
+console.log(res)
+}
+
+});
+
+}
+
+});
+
+});
+
+</script>
+
+}
