@@ -12,7 +12,7 @@ namespace Repositories.Interfaces
 
         public Task<int> DeleteUser(int EmployeeId);
 
-        public Task<int> UpdateUserStatus(int EmployeeId, string Status);
+        public Task<t_Employee> UpdateUserStatus(int EmployeeId, string Status);
 
         public Task<int> ChangePassword(vm_ChangePassword changePassword);
     }

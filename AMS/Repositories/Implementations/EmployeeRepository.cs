@@ -105,45 +105,108 @@ namespace Repositories.Implementations
             return null;
         }
 
-        public Task<t_Employee> UpdateUser(int EmployeeId, t_Employee employee)
+        public async Task<t_Employee> UpdateUser(int EmployeeId, t_Employee employee)
         {
-            throw new NotImplementedException();
+            var employees = new List<t_Employee>();
+            try
+            {
+                using var cmd = new NpgsqlCommand(
+                    "UPDATE t_employee SET c_name = @name, c_email = @email, c_role = @role, c_profileimage = @image WHERE c_empid = @empid",
+                    _conn);
+                cmd.Parameters.AddWithValue("@empid", EmployeeId);
+                cmd.Parameters.AddWithValue("@name", employee.Name ?? "");
+                cmd.Parameters.AddWithValue("@email", employee.Email ?? "");
+                cmd.Parameters.AddWithValue("@role", employee.Role ?? "");
+                cmd.Parameters.AddWithValue("@image", employee.Image ?? "");
+
+                await _conn.OpenAsync();
+                using var reader = await cmd.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    return new t_Employee
+                    {
+                        EmployeeId = reader.GetInt32(reader.GetOrdinal("c_empid")),
+                        Name = reader["c_name"]?.ToString(),
+                        Email = reader["c_email"]?.ToString(),
+                        Role = reader["c_role"]?.ToString(),
+                        Image = reader["c_profileimage"]?.ToString(),
+                        Status = reader["c_status"]?.ToString()
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("GetEmployeeProfileById Error: " + ex.Message);
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
+            return null;
         }
 
-        public Task<int> UpdateUserStatus(int EmployeeId, string Status)
+        public async Task<t_Employee> UpdateUserStatus(int EmployeeId, string Status)
         {
-            throw new NotImplementedException();
+            var employees = new List<t_Employee>();
+            try
+            {
+                using var cmd = new NpgsqlCommand(
+                    "UPDATE t_employee SET c_status = @status WHERE c_empid = @empid",
+                    _conn);
+                cmd.Parameters.AddWithValue("@empid", EmployeeId);
+                cmd.Parameters.AddWithValue("@status", Status);
+
+                await _conn.OpenAsync();
+                using var reader = await cmd.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    return new t_Employee
+                    {
+                        EmployeeId = reader.GetInt32(reader.GetOrdinal("c_empid")),
+                        Name = reader["c_name"]?.ToString(),
+                        Email = reader["c_email"]?.ToString(),
+                        Role = reader["c_role"]?.ToString(),
+                        Image = reader["c_profileimage"]?.ToString(),
+                        Status = reader["c_status"]?.ToString()
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("GetEmployeeProfileById Error: " + ex.Message);
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
+
+            return null;
         }
 
         public async Task<int> ChangePassword(vm_ChangePassword changePassword)
         {
-             try
-        {
-            var query = changePassword.Image is null
-                ? "UPDATE t_employee SET c_name = @name WHERE c_empid = @empid"
-                : "UPDATE t_employee SET c_name = @name, c_profileimage = @profileimage WHERE c_empid = @empid";
-
-            using var cmd = new NpgsqlCommand(query, _conn);
-            cmd.Parameters.AddWithValue("@name", changePassword.Name);
-            cmd.Parameters.AddWithValue("@empid", changePassword.EmployeeId);
-            if (changePassword.Image is not null)
+            int result = 0;
+            try
             {
-                cmd.Parameters.AddWithValue("@profileimage", changePassword.Image);
+                using var cmd = new NpgsqlCommand(
+                    "UPDATE t_employee SET c_password = @password WHERE c_empid = @empid",
+                    _conn);
+                cmd.Parameters.AddWithValue("@empid", changePassword.EmployeeId);
+                cmd.Parameters.AddWithValue("@password", changePassword.NewPassword);
+
+                await _conn.OpenAsync();
+                result = await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("ChangePassword Error: " + ex.Message);
+            }
+            finally
+            {
+                await _conn.CloseAsync();
             }
 
-            await _conn.OpenAsync();
-            var rows = await cmd.ExecuteNonQueryAsync();
-            return rows > 0 ? 1 : 0;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("UpdateProfile Error: " + ex.Message);
-            return 0;
-        }
-        finally
-        {
-            await _conn.CloseAsync();
-        }
+            return result;
         }
     }
 }

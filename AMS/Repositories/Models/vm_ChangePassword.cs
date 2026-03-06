@@ -5,6 +5,8 @@ namespace Repositories;
 public class vm_ChangePassword
 {
     [Required]
+    public int EmployeeId { get; set; }
+    [Required]
     public string? OldPassword { get; set; }
     [Required]
     public string? NewPassword { get; set; }
