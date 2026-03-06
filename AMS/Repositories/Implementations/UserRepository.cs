@@ -86,6 +86,7 @@ namespace Repositories.Implementations
                 com.Parameters.AddWithValue("@c_email", employee.Email ?? "");
                 com.Parameters.AddWithValue("@c_password", employee.Password ?? "");
                 com.Parameters.AddWithValue("@c_role", "Employee");
+                com.Parameters.AddWithValue("@c_gender", (object?)employee.Gender ?? DBNull.Value);
                 com.Parameters.AddWithValue("@c_image", (object?)employee.Image ?? DBNull.Value);
                 await _conn.OpenAsync();
                 await com.ExecuteNonQueryAsync();
