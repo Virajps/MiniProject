@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin Portal</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/kendo/kendo.default-v2.min.css" />
+
+    <style>
+        :root {
+            --sidebar-width: 250px;
+            --topbar-height: 64px;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+        }
+
+        .admin-sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            top: 0;
+        }
+
+        .admin-topbar {
+            height: var(--topbar-height);
+            z-index: 20;
+        }
+
+        #adminSidebarPanelBar {
+            border: none;
+            background: transparent;
+        }
+
+        #adminSidebarPanelBar .k-link {
+            border-radius: 0.5rem;
+            margin: 0.2rem 0;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        #adminSidebarPanelBar .k-selected > .k-link,
+        #adminSidebarPanelBar .k-state-selected > .k-link {
+            background: #e0f2fe;
+            color: #0b6e99;
+        }
+
+        #profileMenu {
+            border: none;
+            background: transparent;
+        }
+
+        #profileMenu > .k-item > .k-link {
+            padding: 0;
+            border: none;
+            background: transparent;
+        }
+
+        #profileMenu .k-animation-container {
+            margin-top: 0.5rem;
+        }
+
+        .profile-trigger {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 2px solid #dbeafe;
+            background: #f0f9ff;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .profile-trigger img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .sidebar-backdrop {
+            display: none;
+        }
+
+        #sidebarToggleBtn {
+            display: none;
+        }
+
+        @@media (max-width: 991px) {
+            .admin-sidebar {
+                width: min(82vw, 290px);
+                position: fixed !important;
+                top: var(--topbar-height);
+                left: 0;
+                bottom: 0;
+                height: auto;
+                z-index: 45;
+                transform: translateX(-105%);
+                transition: transform 0.25s ease;
+                box-shadow: 8px 0 20px rgba(15, 23, 42, 0.16);
+            }
+
+            .admin-shell.sidebar-open .admin-sidebar {
+                transform: translateX(0);
+            }
+
+            #sidebarToggleBtn {
+                display: inline-flex;
+            }
+
+            .sidebar-backdrop {
+                display: block;
+                position: fixed;
+                inset: var(--topbar-height) 0 0 0;
+                background: rgba(15, 23, 42, 0.3);
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.25s ease;
+                z-index: 30;
+            }
+
+            .admin-shell.sidebar-open .sidebar-backdrop {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            body.sidebar-open-mobile {
+                overflow: hidden;
+            }
+        }
+    </style>
+</head>
+<body class="text-dark">
+    @{
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    }
+
+    <div class="admin-shell d-flex min-vh-100">
+        <aside class="admin-sidebar position-sticky bg-white border-end p-3 d-flex flex-column gap-3">
+            <div class="pb-2 border-bottom">
+                <h1 class="h5 mb-1 fw-bold">AMS Admin</h1>
+                <p class="mb-0 text-muted small">Attendance & profile workspace</p>
+            </div>
+
+            <ul id="adminSidebarPanelBar" class="mb-0">
+                <li class="@(currentController == "admin" && currentAction == "Dashboard" ? "k-selected" : "")">
+                    <a href="@Url.Action("Dashboard", "admin")">
+                        <span class="k-icon k-i-dashboard me-2"></span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="@(currentController == "admin" && currentAction == "History" ? "k-selected" : "")">
+                    <a href="@Url.Action("History", "admin")">
+                        <span class="k-icon k-i-user me-2"></span>
+                        Employee Attendance
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <div class="sidebar-backdrop d-lg-none"></div>
+
+        <div class="admin-main flex-grow-1 d-flex flex-column min-vh-100">
+            <header class="admin-topbar sticky-top bg-white border-bottom px-3 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <button id="sidebarToggleBtn" type="button" class="btn btn-outline-secondary btn-sm">Menu</button>
+                </div>
+
+                <ul id="profileMenu" class="ms-auto mb-0">
+                    <li>
+                        <span class="profile-trigger" aria-label="Profile options">
+                            @* @if (!string.IsNullOrWhiteSpace(profileImage))
+                            {
+                                <img src="~/profile_images/@profileImage" alt="Profile" />
+                            }
+                            else
+                            { *@
+                                <span class="k-icon k-i-user"></span>
+                            @* } *@
+                        </span>
+                        <ul>
+                            <li>
+                                <div class="card border-0 shadow-sm" style="width: 260px;">
+                                    <div class="card-body p-3">
+                                        <p class="mb-0 fw-bold">Admin</p>
+                                        @* <a id="viewProfileBtn" href="@Url.Action("UpdateUser", "admin")" class="w-100 mb-2">View Profile</a> *@
+                                        <a id="logoutBtn" href="@Url.Action("Logout", "User")" class="w-100">Logout</a>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </header>
+
+            <main class="p-3">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/kendo/kendo.all.min.js"></script>
+    <script>
+        $(function () {
+            var $shell = $(".admin-shell");
+            var $body = $("body");
+
+            $("#adminSidebarPanelBar").kendoPanelBar({
+                expandMode: "single",
+                select: function () {
+                    if (window.matchMedia("(max-width: 991px)").matches) {
+                        $shell.removeClass("sidebar-open");
+                        $body.removeClass("sidebar-open-mobile");
+                    }
+                }
+            });
+
+            $("#profileMenu").kendoMenu({
+                orientation: "horizontal",
+                openOnClick: false,
+                hoverDelay: 60
+            });
+
+            $("#sidebarToggleBtn").kendoButton({
+                icon: "menu"
+            });
+
+            $("#sidebarToggleBtn").on("click", function () {
+                $shell.toggleClass("sidebar-open");
+                $body.toggleClass("sidebar-open-mobile", $shell.hasClass("sidebar-open"));
+            });
+
+            $("#viewProfileBtn").kendoButton({
+                icon: "user"
+            });
+
+            $("#logoutBtn").kendoButton({
+                icon: "logout"
+            });
+
+            $(".sidebar-backdrop").on("click", function () {
+                $shell.removeClass("sidebar-open");
+                $body.removeClass("sidebar-open-mobile");
+            });
+
+            $(window).on("resize", function () {
+                if (!window.matchMedia("(max-width: 991px)").matches) {
+                    $shell.removeClass("sidebar-open");
+                    $body.removeClass("sidebar-open-mobile");
+                }
+            });
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -369,7 +369,8 @@ namespace Repositories.Implementations
 
                 while (await r.ReadAsync())
                 {
-                    DateTime date = Convert.ToDateTime(r["c_attenddate"]);
+                    DateOnly dateOnly = r.GetFieldValue<DateOnly>(r.GetOrdinal("c_attenddate"));
+                    DateTime date = dateOnly.ToDateTime(TimeOnly.MinValue);
 
                     int inH = r["c_clockinhour"] == DBNull.Value ? 9 : Convert.ToInt32(r["c_clockinhour"]);
                     int inM = r["c_clockinmin"] == DBNull.Value ? 0 : Convert.ToInt32(r["c_clockinmin"]);

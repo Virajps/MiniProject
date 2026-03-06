@@ -1,0 +1,182 @@
+@{
+    ViewData["Title"] = "History";
+    Layout = "~/Views/Shared/AdminLayout.cshtml";
+}
+
+<style>
+    .scheduler-container{
+        max-width:1350px;
+        margin-left:20px;
+    }
+
+    #employeeSelect{
+        padding:8px 12px;
+        border-radius:8px;
+        border:1px solid #ccc;
+        font-size:14px;
+        margin-bottom:15px;
+    }
+
+    #scheduler{
+        margin-top:20px;
+        border-radius:12px;
+        overflow:hidden;
+        box-shadow:0 6px 18px rgba(0,0,0,0.15);
+    }
+
+    .k-scheduler-toolbar{
+        background:#3f72af;
+        color:white;
+    }
+
+    .k-scheduler-toolbar .k-button{
+        border-radius:6px;
+        margin-left:4px;
+    }
+
+    .k-scheduler-toolbar .k-button.k-selected{
+        background:#112d4e;
+        color:white;
+        border-color: #112d4e;
+    }
+
+    .k-scheduler-monthview td{
+        border:1px solid #e6e6e6;
+    }
+
+    .k-scheduler-monthview .k-scheduler-table td:hover{
+        background:#f5f7fa;
+    }
+
+    .k-scheduler-monthview .k-scheduler-table td:nth-child(1){
+        background:#f0f0f0 !important;
+        color:#999;
+    }
+
+    .k-event{
+        border:none !important;
+        background:none !important;
+        padding:0 !important;
+        box-shadow:none !important;
+    }
+
+    .attendance-event{
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        width:100%;
+        height:100%;
+        font-size:15px;
+        font-weight:600;
+        border-radius:4px;
+    }
+
+    .Regular{
+        background:#4CAF50;
+        color:white;
+    }
+
+    .LateIn{
+        background:#FFC107;
+        color:black;
+    }
+
+    .EarlyOut{
+        background:#FF7043;
+        color:white;
+    }
+
+    .Absent{
+        background:#F44336;
+        color:white;
+    }
+
+    .k-scheduler-weekview .k-event{
+        text-align: center;
+        margin-left: 0.5%;
+    }
+
+    .k-scheduler-weekview .k-scheduler-all-day .k-event{
+        height:28px;
+    }
+</style>
+<div class="scheduler-container">
+
+    <select id="employeeSelect" style="width:300px"></select>
+
+    <div style="margin-bottom:10px;font-size:13px;font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;">
+        <span style="background:#4CAF50;padding:5px 10px;border-radius:6px;color:white;">Regular</span>
+        <span style="background:#FFC107;padding:5px 10px;border-radius:6px;">LateIn</span>
+        <span style="background:#ff7043;padding:5px 10px;border-radius:6px;color:white;">EarlyOut</span>
+        <span style="background:#ef5350;padding:5px 10px;border-radius:6px;color:white;">Absent</span>
+    </div>
+    <div id="scheduler"></div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function () {
+
+        $.get("/Employee/GetAllUsers", function (res) {
+            if (res.success) {
+                res.data.forEach(emp => {
+                    $("#employeeSelect").append(
+                        `<option value="${emp.employeeId}">${emp.name}</option>`
+                    );
+                });
+                $("#employeeSelect").trigger("change");
+            }
+        });
+    });
+
+    $("#scheduler").kendoScheduler({
+            date: new Date(),
+            height: 600,
+            views: [
+                { type: "month", selected: true },
+                "week",
+                "agenda"
+            ],
+            dataSource: {
+                transport: {
+                    read: {
+                        url: "/Admin/GetAttendanceScheduler",
+                        dataType: "json"
+                    },
+                    parameterMap: function(options, operation){
+                        if(operation === "read"){
+                            return {
+                                empId: $("#employeeSelect").val()
+                            };
+                        }
+                    }
+                },
+                schema: {
+                    model: {
+                        id: "id",
+                        fields: {
+                            id: { from: "id" },
+                            title: { from: "title" },
+                            start: { from: "start", type: "date" },
+                            end: { from: "end", type: "date" },
+                            status: { from: "status" },
+                            workingHour: { from: "workingHour" },
+                            isAllDay: { from: "isAllDay", defaultValue: true }
+                        }
+                    }
+                }
+            },
+            eventTemplate: `
+                <div class="attendance-event #= status #">
+                    <span>#= status #</span>
+                </div>
+                `
+        });
+
+    $("#employeeSelect").change(function () {
+        $("#scheduler")
+            .data("kendoScheduler")
+            .dataSource.read();
+    });
+</script>
+}

@@ -1,0 +1,39 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/AdminLayout.cshtml";
+}
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="k-card">
+            <div class="k-card-body">
+                <h5 class="k-card-title mb-2">Admin Dashboard</h5>
+                <p class="mb-3">Welcome to your dashboard.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="k-card">
+            <div class="k-card-body">
+                <h5 class="k-card-title mb-2">Task Progress</h5>
+                <div id="taskProgress"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $("#markAttendanceBtn").kendoButton({
+                themeColor: "primary",
+                icon: "calendar"
+            });
+
+            $("#taskProgress").kendoProgressBar({
+                type: "percent",
+                value: 65
+            });
+        });
+    </script>
+}
