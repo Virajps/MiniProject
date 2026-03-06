@@ -135,46 +135,33 @@ namespace Repositories.Implementations
                 await _conn.CloseAsync();
             }
 
-            return false;
-        }
-        public async Task<t_Employee> UpdateUserStatus(int EmployeeId, string Status)
+        public async Task<bool> UpdateUserStatus(int employeeId, string status)
         {
-            var employees = new List<t_Employee>();
             try
             {
                 using var cmd = new NpgsqlCommand(
                     "UPDATE t_employee SET c_status = @status WHERE c_empid = @empid",
                     _conn);
-                cmd.Parameters.AddWithValue("@empid", EmployeeId);
-                cmd.Parameters.AddWithValue("@status", Status);
+
+                cmd.Parameters.AddWithValue("@empid", employeeId);
+                cmd.Parameters.AddWithValue("@status", status);
 
                 await _conn.OpenAsync();
-                using var reader = await cmd.ExecuteReaderAsync();
-                if (await reader.ReadAsync())
-                {
-                    return new t_Employee
-                    {
-                        EmployeeId = reader.GetInt32(reader.GetOrdinal("c_empid")),
-                        Name = reader["c_name"]?.ToString(),
-                        Email = reader["c_email"]?.ToString(),
-                        Role = reader["c_role"]?.ToString(),
-                        Image = reader["c_image"]?.ToString(),
-                        Status = reader["c_status"]?.ToString()
-                    };
-                }
+
+                int rowsAffected = await cmd.ExecuteNonQueryAsync();
+
+                return rowsAffected > 0;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("GetEmployeeProfileById Error: " + ex.Message);
+                Console.WriteLine("UpdateUserStatus Error: " + ex.Message);
+                return false;
             }
             finally
             {
                 await _conn.CloseAsync();
             }
-
-            return null;
         }
-
         public async Task<int> ChangePassword(vm_ChangePassword changePassword)
         {
             int result = 0;
