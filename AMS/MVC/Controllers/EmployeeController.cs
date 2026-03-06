@@ -1,19 +1,145 @@
 using Microsoft.AspNetCore.Mvc;
+using Repositories;
+using Repositories.Implementations;
+using Repositories.Interfaces;
+using Repositories.Models;
 
 namespace MyApp.Namespace
 {
     public class EmployeeController : Controller
     {
+        private readonly IWebHostEnvironment _env;
+        private readonly IEmployeeInterface _employee;
+        // GET: EmployeeController
+        public EmployeeController(IWebHostEnvironment env,IEmployeeInterface employee)
+        {
+            _env = env;
+            _employee = employee;
+        }
         public ActionResult Index()
         {
             return View();
         }
-
         public ActionResult Dashboard()
         {
             return View();
         }
+        [HttpPut]
+        public async Task<IActionResult> ChangePassword(vm_ChangePassword changePassword)
+        {
+            
+            var result = await _employee.ChangePassword(changePassword);
+            if(result == 0)
+            {
+                return Ok(new{success=false, message="Internal Server Error"});
+            }
+            else if(result > 0){
+                return Ok(new{success=true, message="Passsword Updated Successfull!"});
+            }
+            else
+            {
+                return Ok(new{success=false, message="failed to change password"});
+            }
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetUserById(int EmployeeId)
+        {
+            
+            var result = await _employee.GetUserById(EmployeeId);
+            if(result !=null){
+                System.Console.WriteLine("User data fetched"+EmployeeId);
+                return Ok(new{success=true, data=result});
+            }
+            else if(result == null)
+            {
+                return Ok(new{success=false, message="Data not fetched"});
+            }
+            else
+            {
+                return Ok(new{success=false, message="Internal Server Error while GetUserById"});
+            }
 
+                
+        }
+        [HttpDelete]
+        public async Task<IActionResult> DeleteUser(int EmployeeId)
+        {
+            var result = await _employee.DeleteUser(EmployeeId);
+            if(result == 1)
+            {
+                return Ok(new{success=true, message="Employee Deleted Successfull!"});
+            }
+            else if(result == 0)
+            {
+                return Ok(new{success=true, message="Internal Server Error while deleting employee"});
+            }
+            else
+            {
+                return BadRequest(new{success=false, message="Error while deleting employee"});
+            }
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            try
+            {
+                var result = await _employee.GetAllUsers();
+                System.Console.WriteLine("Employee data fetched");
+                return Ok(new{success=true, data=result});
+            }
+            catch(Exception ex)
+            {
+                return Ok(new{success=false, message="Internal Server Error while GetAllUsers"+ex.Message});
+            }
+        }
+        [HttpPut]
+        public async Task<IActionResult> UpdateUser(int EmployeeId, t_Employee employee)
+        {
+            if (employee.ImageFile != null && employee.ImageFile.Length > 0)
+            {
+                var uploads = Path.Combine(Directory.GetCurrentDirectory(), "..", "MVC", "wwwroot", "profile_images");
+
+                if (!Directory.Exists(uploads))
+                    Directory.CreateDirectory(uploads);
+
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(employee.ImageFile.FileName);
+                var filePath = Path.Combine(uploads, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await employee.ImageFile.CopyToAsync(stream);
+                }
+
+                employee.Image = fileName;
+            }
+            var result = await _employee.UpdateUser(EmployeeId, employee);
+
+            if(result == true)
+            {
+                return Ok(new{success=true, message="Employee Updated Successfull!"});
+            }
+            else
+            {
+                return Ok(new{success=false, message="Internal server error while updating"});
+            }
+
+        }
+        [HttpPut]
+        public async Task<IActionResult> UpdateUserStatus(int EmployeeId, string Status)
+        {
+            System.Console.WriteLine(EmployeeId+""+Status);
+            var result = await _employee.UpdateUserStatus(EmployeeId, Status);
+            System.Console.WriteLine(result);
+
+            if(result != null)
+            {
+                return Ok(new{sucess=true, message="Status updated successfull"});
+            }
+            else
+            {
+                return BadRequest(new{success=false, message="Failed to update status"});
+            }
+        }
         
     }
 }
