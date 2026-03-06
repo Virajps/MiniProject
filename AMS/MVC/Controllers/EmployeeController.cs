@@ -4,7 +4,6 @@ namespace MyApp.Namespace
 {
     public class EmployeeController : Controller
     {
-        // GET: EmployeeController
         public ActionResult Index()
         {
             return View();
@@ -14,6 +13,7 @@ namespace MyApp.Namespace
         {
             return View();
         }
+
         
     }
 }
