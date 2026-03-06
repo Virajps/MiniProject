@@ -43,13 +43,13 @@ namespace MyApp.Namespace
                 {
                     HttpContext.Session.SetInt32("EmployeeId", UserData.EmployeeId);
                     HttpContext.Session.SetString("EmployeeName", UserData.Name);
-                    if(UserData.Role == "Admin")
+                    if(login.UserRole == "Admin")
                     {
                         return RedirectToAction("Dashboard","Admin");
                     }
                     else
                     {
-                        if(UserData.Status == "Active")
+                        if(login.Status == "Active")
                         {
                             return RedirectToAction("Dashboard","Employee");
                         }
@@ -101,6 +101,7 @@ namespace MyApp.Namespace
                 ViewData["message"] = "There was some error while Registration"; 
             }
         }
+        
         return View();
         }
     }
