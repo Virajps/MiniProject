@@ -32,7 +32,7 @@ class="profile-img">
 
 <div class="text-center mt-3">
 <span class="text-muted">Already have an account?</span>
-<a href="Login" class="redirect fw-bold text-decoration-none">Login</a>
+<a asp-action="Login" asp-controller="User" class="redirect fw-bold text-decoration-none">Login</a>
 </div>
 
 </div>
@@ -198,7 +198,7 @@ RegisterData.append("Gender", e.model.gender);
 let upload=$("#profileUpload").data("kendoUpload");
 let file=upload.getFiles()[0];
 if (file) {
-    RegisterData.append("ImageFile", file); // Append the file
+    RegisterData.append("ImageFile", file.rawFile); // Append the file
 }
 
 for (let [key, value] of RegisterData.entries()) {

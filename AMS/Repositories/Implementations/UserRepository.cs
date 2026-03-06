@@ -78,14 +78,15 @@ namespace Repositories.Implementations
 
             using (var com = new NpgsqlCommand(
                        @"INSERT INTO t_employee
-                    (c_name, c_email, c_password, c_role, c_image)
+                    (c_name, c_email, c_password, c_role,c_gender, c_image)
                     VALUES
-                    (@c_name, @c_email, @c_password, @c_role, @c_image)", _conn))
+                    (@c_name, @c_email, @c_password, @c_role,@c_gender, @c_image)", _conn))
             {
                 com.Parameters.AddWithValue("@c_name", (object?)employee.Name ?? DBNull.Value);
                 com.Parameters.AddWithValue("@c_email", employee.Email ?? "");
                 com.Parameters.AddWithValue("@c_password", employee.Password ?? "");
                 com.Parameters.AddWithValue("@c_role", "Employee");
+                com.Parameters.AddWithValue("@c_gender", (object?)employee.Gender ?? DBNull.Value);
                 com.Parameters.AddWithValue("@c_image", (object?)employee.Image ?? DBNull.Value);
                 await _conn.OpenAsync();
                 await com.ExecuteNonQueryAsync();
