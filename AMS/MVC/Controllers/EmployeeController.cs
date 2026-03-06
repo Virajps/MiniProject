@@ -8,14 +8,16 @@ namespace MyApp.Namespace
 {
     public class EmployeeController : Controller
     {
+        private readonly IAttendenceInterface _repo;
         private readonly IWebHostEnvironment _env;
         private readonly IEmployeeInterface _employee;
         // GET: EmployeeController
-        public EmployeeController(IWebHostEnvironment env,IEmployeeInterface employee)
+        public EmployeeController(IWebHostEnvironment env, IEmployeeInterface employee)
         {
             _env = env;
             _employee = employee;
         }
+
         public ActionResult Index()
         {
             return View();
@@ -27,55 +29,57 @@ namespace MyApp.Namespace
         [HttpPut]
         public async Task<IActionResult> ChangePassword(vm_ChangePassword changePassword)
         {
-            
+
             var result = await _employee.ChangePassword(changePassword);
-            if(result == 0)
+            if (result == 0)
             {
-                return Ok(new{success=false, message="Internal Server Error"});
+                return Ok(new { success = false, message = "Internal Server Error" });
             }
-            else if(result > 0){
-                return Ok(new{success=true, message="Passsword Updated Successfull!"});
+            else if (result > 0)
+            {
+                return Ok(new { success = true, message = "Passsword Updated Successfull!" });
             }
             else
             {
-                return Ok(new{success=false, message="failed to change password"});
+                return Ok(new { success = false, message = "failed to change password" });
             }
         }
         [HttpGet]
         public async Task<IActionResult> GetUserById(int EmployeeId)
         {
-            
+
             var result = await _employee.GetUserById(EmployeeId);
-            if(result !=null){
-                System.Console.WriteLine("User data fetched"+EmployeeId);
-                return Ok(new{success=true, data=result});
-            }
-            else if(result == null)
+            if (result != null)
             {
-                return Ok(new{success=false, message="Data not fetched"});
+                System.Console.WriteLine("User data fetched" + EmployeeId);
+                return Ok(new { success = true, data = result });
+            }
+            else if (result == null)
+            {
+                return Ok(new { success = false, message = "Data not fetched" });
             }
             else
             {
-                return Ok(new{success=false, message="Internal Server Error while GetUserById"});
+                return Ok(new { success = false, message = "Internal Server Error while GetUserById" });
             }
 
-                
+
         }
         [HttpDelete]
         public async Task<IActionResult> DeleteUser(int EmployeeId)
         {
             var result = await _employee.DeleteUser(EmployeeId);
-            if(result == 1)
+            if (result == 1)
             {
-                return Ok(new{success=true, message="Employee Deleted Successfull!"});
+                return Ok(new { success = true, message = "Employee Deleted Successfull!" });
             }
-            else if(result == 0)
+            else if (result == 0)
             {
-                return Ok(new{success=true, message="Internal Server Error while deleting employee"});
+                return Ok(new { success = true, message = "Internal Server Error while deleting employee" });
             }
             else
             {
-                return BadRequest(new{success=false, message="Error while deleting employee"});
+                return BadRequest(new { success = false, message = "Error while deleting employee" });
             }
         }
         [HttpGet]
@@ -85,11 +89,11 @@ namespace MyApp.Namespace
             {
                 var result = await _employee.GetAllUsers();
                 System.Console.WriteLine("Employee data fetched");
-                return Ok(new{success=true, data=result});
+                return Ok(new { success = true, data = result });
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                return Ok(new{success=false, message="Internal Server Error while GetAllUsers"+ex.Message});
+                return Ok(new { success = false, message = "Internal Server Error while GetAllUsers" + ex.Message });
             }
         }
         [HttpPut]
@@ -114,32 +118,41 @@ namespace MyApp.Namespace
             }
             var result = await _employee.UpdateUser(EmployeeId, employee);
 
-            if(result == true)
+            if (result == true)
             {
-                return Ok(new{success=true, message="Employee Updated Successfull!"});
+                return Ok(new { success = true, message = "Employee Updated Successfull!" });
             }
             else
             {
-                return Ok(new{success=false, message="Internal server error while updating"});
+                return Ok(new { success = false, message = "Internal server error while updating" });
             }
 
         }
         [HttpPut]
         public async Task<IActionResult> UpdateUserStatus(int EmployeeId, string Status)
         {
-            System.Console.WriteLine(EmployeeId+""+Status);
+            System.Console.WriteLine(EmployeeId + "" + Status);
             var result = await _employee.UpdateUserStatus(EmployeeId, Status);
             System.Console.WriteLine(result);
 
-            if(result != null)
+            if (result != null)
             {
-                return Ok(new{sucess=true, message="Status updated successfull"});
+                return Ok(new { sucess = true, message = "Status updated successfull" });
             }
             else
             {
-                return BadRequest(new{success=false, message="Failed to update status"});
+                return BadRequest(new { success = false, message = "Failed to update status" });
             }
         }
-        
+
+        public async Task<IActionResult> AttendanceChart(string type, DateTime date)
+        {
+            int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
+
+            var data = await _repo.GetAttendanceChart(empId, type, date);
+
+            return Json(data);
+        }
+
     }
 }
