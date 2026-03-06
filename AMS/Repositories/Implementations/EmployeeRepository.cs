@@ -38,7 +38,7 @@ namespace Repositories.Implementations
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "SELECT c_empid, c_name, c_email, c_role, c_profileimage FROM t_employee ORDER BY c_empid",
+                    "SELECT c_empid, c_name, c_email, c_role, c_image FROM t_employee ORDER BY c_empid",
                     _conn);
 
                 await _conn.OpenAsync();
@@ -51,7 +51,7 @@ namespace Repositories.Implementations
                         Name = reader["c_name"]?.ToString(),
                         Email = reader["c_email"]?.ToString(),
                         Role = reader["c_role"]?.ToString(),
-                        Image = reader["c_profileimage"]?.ToString(),
+                        Image = reader["c_image"]?.ToString(),
                         Status = reader["c_status"]?.ToString()
                     });
                 }
@@ -74,7 +74,7 @@ namespace Repositories.Implementations
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "SELECT c_empid, c_name, c_email, c_role, c_profileimage FROM t_employee WHERE c_empid = @empid",
+                    "SELECT c_empid, c_name, c_email, c_role, c_image FROM t_employee WHERE c_empid = @empid",
                     _conn);
                 cmd.Parameters.AddWithValue("@empid", EmployeeId);
 
@@ -88,7 +88,7 @@ namespace Repositories.Implementations
                         Name = reader["c_name"]?.ToString(),
                         Email = reader["c_email"]?.ToString(),
                         Role = reader["c_role"]?.ToString(),
-                        Image = reader["c_profileimage"]?.ToString(),
+                        Image = reader["c_image"]?.ToString(),
                         Status = reader["c_status"]?.ToString()
                     };
                 }
@@ -111,12 +111,11 @@ namespace Repositories.Implementations
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "UPDATE t_employee SET c_name = @name, c_email = @email, c_role = @role, c_profileimage = @image WHERE c_empid = @empid",
+                    "UPDATE t_employee SET c_name = @name, c_gender = @gender, c_role = @role, c_image = @image WHERE c_empid = @empid",
                     _conn);
                 cmd.Parameters.AddWithValue("@empid", EmployeeId);
                 cmd.Parameters.AddWithValue("@name", employee.Name ?? "");
-                cmd.Parameters.AddWithValue("@email", employee.Email ?? "");
-                cmd.Parameters.AddWithValue("@role", employee.Role ?? "");
+                cmd.Parameters.AddWithValue("@gender", employee.Gender ?? "");
                 cmd.Parameters.AddWithValue("@image", employee.Image ?? "");
 
                 await _conn.OpenAsync();
@@ -129,7 +128,7 @@ namespace Repositories.Implementations
                         Name = reader["c_name"]?.ToString(),
                         Email = reader["c_email"]?.ToString(),
                         Role = reader["c_role"]?.ToString(),
-                        Image = reader["c_profileimage"]?.ToString(),
+                        Image = reader["c_image"]?.ToString(),
                         Status = reader["c_status"]?.ToString()
                     };
                 }
@@ -166,7 +165,7 @@ namespace Repositories.Implementations
                         Name = reader["c_name"]?.ToString(),
                         Email = reader["c_email"]?.ToString(),
                         Role = reader["c_role"]?.ToString(),
-                        Image = reader["c_profileimage"]?.ToString(),
+                        Image = reader["c_image"]?.ToString(),
                         Status = reader["c_status"]?.ToString()
                     };
                 }
