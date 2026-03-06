@@ -32,7 +32,7 @@ class="profile-img">
 
 <div class="text-center mt-3">
 <span class="text-muted">Already have an account?</span>
-<a href="Login" class="fw-bold text-decoration-none">Login</a>
+<a href="Login" class="redirect fw-bold text-decoration-none">Login</a>
 </div>
 
 </div>
@@ -200,7 +200,10 @@ let file=upload.getFiles()[0];
 if (file) {
     RegisterData.append("ImageFile", file); // Append the file
 }
-/* AJAX */
+
+for (let [key, value] of RegisterData.entries()) {
+    console.log(key, value);
+}
 
 $.ajax({
 
