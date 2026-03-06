@@ -39,7 +39,7 @@ namespace Repositories.Implementations
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "SELECT c_empid, c_name, c_email, c_role, c_image FROM t_employee ORDER BY c_empid",
+                    "SELECT c_empid, c_name, c_email, c_role, c_image, c_status FROM t_employee ORDER BY c_empid",
                     _conn);
 
                 await _conn.OpenAsync();
@@ -75,7 +75,7 @@ namespace Repositories.Implementations
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "SELECT c_empid, c_name, c_email, c_role, c_image FROM t_employee WHERE c_empid = @empid",
+                    "SELECT c_empid, c_name, c_email, c_role, c_image, c_status FROM t_employee WHERE c_empid = @empid",
                     _conn);
                 cmd.Parameters.AddWithValue("@empid", EmployeeId);
 
@@ -97,6 +97,7 @@ namespace Repositories.Implementations
             catch (Exception ex)
             {
                 Console.WriteLine("GetEmployeeProfileById Error: " + ex.Message);
+                return null;
             }
             finally
             {
@@ -106,44 +107,33 @@ namespace Repositories.Implementations
             return null;
         }
 
-        public async Task<t_Employee> UpdateUser(int EmployeeId, t_Employee employee)
+        public async Task<bool> UpdateUser(int EmployeeId, t_Employee employee)
         {
-            var employees = new List<t_Employee>();
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "UPDATE t_employee SET c_name = @name, c_gender = @gender, c_role = @role, c_image = @image WHERE c_empid = @empid",
+                    "UPDATE t_employee SET c_name=@name, c_gender=@gender, c_image=@image WHERE c_empid=@empid",
                     _conn);
+
                 cmd.Parameters.AddWithValue("@empid", EmployeeId);
                 cmd.Parameters.AddWithValue("@name", employee.Name ?? "");
                 cmd.Parameters.AddWithValue("@gender", employee.Gender ?? "");
                 cmd.Parameters.AddWithValue("@image", employee.Image ?? "");
 
                 await _conn.OpenAsync();
-                using var reader = await cmd.ExecuteReaderAsync();
-                if (await reader.ReadAsync())
-                {
-                    return new t_Employee
-                    {
-                        EmployeeId = reader.GetInt32(reader.GetOrdinal("c_empid")),
-                        Name = reader["c_name"]?.ToString(),
-                        Email = reader["c_email"]?.ToString(),
-                        Role = reader["c_role"]?.ToString(),
-                        Image = reader["c_image"]?.ToString(),
-                        Status = reader["c_status"]?.ToString()
-                    };
-                }
+
+                int rows = await cmd.ExecuteNonQueryAsync();
+
+                return rows > 0;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("GetEmployeeProfileById Error: " + ex.Message);
+                Console.WriteLine("UpdateUser Error: " + ex.Message);
             }
             finally
             {
                 await _conn.CloseAsync();
             }
-            return null;
-        }
 
         public async Task<bool> UpdateUserStatus(int employeeId, string status)
         {
