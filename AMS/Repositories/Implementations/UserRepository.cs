@@ -37,6 +37,7 @@ namespace Repositories.Implementations
                 userData.Email = reader["c_email"]?.ToString();
                 userData.Role = reader["c_role"]?.ToString();
                 userData.Image = reader["c_image"]?.ToString();
+                userData.Status = reader["c_status"]?.ToString();
             }
         }
         catch (Exception ex)
@@ -84,7 +85,7 @@ namespace Repositories.Implementations
                 com.Parameters.AddWithValue("@c_name", (object?)employee.Name ?? DBNull.Value);
                 com.Parameters.AddWithValue("@c_email", employee.Email ?? "");
                 com.Parameters.AddWithValue("@c_password", employee.Password ?? "");
-                com.Parameters.AddWithValue("@c_role", "employee");
+                com.Parameters.AddWithValue("@c_role", "Employee");
                 com.Parameters.AddWithValue("@c_image", (object?)employee.Image ?? DBNull.Value);
                 await _conn.OpenAsync();
                 await com.ExecuteNonQueryAsync();
