@@ -121,5 +121,23 @@ namespace Repositories.Implementations
             finally { await _conn.CloseAsync(); }
             return att;
         }
+
+        private static t_Attendence MapRow(NpgsqlDataReader r)
+        {
+            return new t_Attendence
+            {
+                AttendId = r.GetInt32(r.GetOrdinal("c_attendid")),
+                EmpId = r.GetInt32(r.GetOrdinal("c_empid")),
+                AttendDate = r.GetDateTime(r.GetOrdinal("c_attenddate")),
+                ClockInHour = r["c_clockinhour"] == DBNull.Value ? null : Convert.ToInt32(r["c_clockinhour"]),
+                ClockInMin = r["c_clockinmin"] == DBNull.Value ? null : Convert.ToInt32(r["c_clockinmin"]),
+                ClockOutHour = r["c_clockouthour"] == DBNull.Value ? null : Convert.ToInt32(r["c_clockouthour"]),
+                ClockOutMin = r["c_clockoutmin"] == DBNull.Value ? null : Convert.ToInt32(r["c_clockoutmin"]),
+                WorkingHour = r["c_workinghour"] == DBNull.Value ? null : Convert.ToInt32(r["c_workinghour"]),
+                AttendStatus = r["c_attendstatus"]?.ToString(),
+                WorkType = r["c_worktype"]?.ToString(),
+                TaskType = r["c_tasktype"]?.ToString()
+            };
+        }
     }
 }

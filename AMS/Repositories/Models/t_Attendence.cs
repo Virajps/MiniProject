@@ -4,8 +4,6 @@ namespace Repositories.Models;
 
 public class t_Attendence
 {
-    public class t_Attendance
-    {
         public int AttendId { get; set; }
         public int EmpId { get; set; }
         public DateTime AttendDate { get; set; }
@@ -46,6 +44,4 @@ public class t_Attendence
             (ClockOutHour.HasValue && ClockOutMin.HasValue)
                 ? $"{ClockOutHour:D2}:{ClockOutMin:D2}"
                 : "--:--";
-    }
-
 }
