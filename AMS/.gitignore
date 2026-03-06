@@ -3,6 +3,7 @@ bin/
 obj/
 out/
 publish/
+DataProtection-Keys/
 
 # IDE/editor
 .vs/
