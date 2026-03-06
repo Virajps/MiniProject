@@ -64,8 +64,8 @@
             e.preventDefault();
 
             const formdata = new FormData();
-            formdata.append("Email", e.model.email);
-            formdata.append("Password", e.model.password);
+            formdata.append("UserEmail", e.model.email);
+            formdata.append("UserPassword", e.model.password);
 
 
             $.ajax({
@@ -77,6 +77,7 @@
                 processData:false,
 
                 success:function(res){
+                    console.log(res)
                     if(res.success){
                         Swal.fire({
                             title: "Success!",
