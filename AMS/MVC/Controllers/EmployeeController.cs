@@ -10,7 +10,10 @@ namespace MyApp.Namespace
             return View();
         }
 
+        public ActionResult Dashboard()
+        {
+            return View();
+        }
         
-
     }
 }

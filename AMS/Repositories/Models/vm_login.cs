@@ -9,6 +9,4 @@ public class vm_login
 
     [Required(ErrorMessage = "Password is required")]
     public string? UserPassword { get; set; }
-
-    public string? UserRole { get; set; }
 }
