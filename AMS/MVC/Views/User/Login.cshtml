@@ -63,13 +63,10 @@
 
             e.preventDefault();
 
-            let formdata=new FormData();
+            const formdata = new FormData();
+            formdata.append("Email", e.model.email);
+            formdata.append("Password", e.model.password);
 
-            formdata.append("name",$("input[name='name']").val());
-            formdata.append("email",$("input[name='email']").val());
-            formdata.append("password",$("input[name='password']").val());
-            formdata.append("gender",$("input[name='gender']:checked").val());
-            formdata.append("profileImage",$("#profileImageInput")[0].files[0]);
 
             $.ajax({
 
@@ -80,8 +77,19 @@
                 processData:false,
 
                 success:function(res){
-                    alert("Registration Successful");
-                    console.log(res);
+                    if(res.success){
+                        Swal.fire({
+                            title: "Success!",
+                            text: res.message,
+                            icon: "success"
+                        });
+                    }else{
+                        Swal.fire({
+                            title: "Oops!",
+                            text: res.message,
+                            icon: "error"
+                        });
+                    }
                 }
 
             });
