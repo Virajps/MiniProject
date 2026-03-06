@@ -47,13 +47,13 @@ namespace MyApp.Namespace
                     HttpContext.Session.SetString("EmployeeName", UserData.Name);
                     if(UserData.Role == "Admin")
                     {
-                        return RedirectToAction("Dashboard","Admin");
+                        return Json(new {success=true,role=UserData.Role});
                     }
                     else
                     {
                         if(UserData.Status == "Active")
                         {
-                            return RedirectToAction("Dashboard","Employee");
+                            return Json(new {success=true,role=UserData.Role});
                         }
                         else
                         {

@@ -39,7 +39,7 @@ namespace Repositories.Implementations
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "SELECT c_empid, c_name, c_email, c_role, c_image, c_status FROM t_employee ORDER BY c_empid",
+                    "SELECT c_empid, c_name, c_email, c_gender, c_role, c_image, c_status FROM t_employee ORDER BY c_empid",
                     _conn);
 
                 await _conn.OpenAsync();
@@ -51,6 +51,7 @@ namespace Repositories.Implementations
                         EmployeeId = reader.GetInt32(reader.GetOrdinal("c_empid")),
                         Name = reader["c_name"]?.ToString(),
                         Email = reader["c_email"]?.ToString(),
+                        Gender = reader["c_gender"]?.ToString(),
                         Role = reader["c_role"]?.ToString(),
                         Image = reader["c_image"]?.ToString(),
                         Status = reader["c_status"]?.ToString()
@@ -75,7 +76,7 @@ namespace Repositories.Implementations
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "SELECT c_empid, c_name, c_email, c_role, c_image, c_status FROM t_employee WHERE c_empid = @empid",
+                    "SELECT c_empid, c_name, c_email, c_gender, c_role, c_image, c_status FROM t_employee WHERE c_empid = @empid",
                     _conn);
                 cmd.Parameters.AddWithValue("@empid", EmployeeId);
 
@@ -88,6 +89,7 @@ namespace Repositories.Implementations
                         EmployeeId = reader.GetInt32(reader.GetOrdinal("c_empid")),
                         Name = reader["c_name"]?.ToString(),
                         Email = reader["c_email"]?.ToString(),
+                        Gender = reader["c_gender"]?.ToString(),
                         Role = reader["c_role"]?.ToString(),
                         Image = reader["c_image"]?.ToString(),
                         Status = reader["c_status"]?.ToString()
