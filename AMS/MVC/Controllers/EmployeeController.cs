@@ -1,3 +1,4 @@
+using System.Threading.Tasks.Dataflow;
 using Microsoft.AspNetCore.Mvc;
 using Repositories;
 using Repositories.Implementations;
@@ -59,6 +60,12 @@ namespace MyApp.Namespace
 
             return Ok(new { success = false, message = "Clock-Out failed" });
         }
+        [HttpGet]
+        public IActionResult ChangePassword()
+        {
+            return View();
+        }
+
         [HttpPut]
         public async Task<IActionResult> ChangePassword(vm_ChangePassword changePassword)
         {
@@ -128,6 +135,10 @@ namespace MyApp.Namespace
             {
                 return Ok(new { success = false, message = "Internal Server Error while GetAllUsers" + ex.Message });
             }
+        }
+        public ActionResult UpdateUser()
+        {
+            return View();
         }
         [HttpPut]
         public async Task<IActionResult> UpdateUser(int EmployeeId, t_Employee employee)
@@ -220,3 +231,4 @@ namespace MyApp.Namespace
         }
     }
 }
+
