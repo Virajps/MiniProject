@@ -15,6 +15,5 @@ namespace MyApp.Namespace
             return View();
         }
         
-
     }
 }
