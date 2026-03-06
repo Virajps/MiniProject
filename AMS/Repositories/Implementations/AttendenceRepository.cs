@@ -103,9 +103,9 @@ namespace Repositories.Implementations
             return summary;
         }
 
-        public async Task<t_Attendence?> GetTodayAttendance(int empId)
+        public async Task<t_Attendance> GetTodayAttendance(int empId)
         {
-            t_Attendence? att = null;
+            t_Attendance? att = null;
             try
             {
                 await _conn.CloseAsync();
@@ -122,9 +122,9 @@ namespace Repositories.Implementations
             return att;
         }
 
-        private static t_Attendence MapRow(NpgsqlDataReader r)
+        private static t_Attendance MapRow(NpgsqlDataReader r)
         {
-            return new t_Attendence
+            return new t_Attendance
             {
                 AttendId = r.GetInt32(r.GetOrdinal("c_attendid")),
                 EmpId = r.GetInt32(r.GetOrdinal("c_empid")),
