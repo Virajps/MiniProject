@@ -22,11 +22,6 @@ body{
     margin-bottom:25px;
 }
 
-.profile-container{
-    text-align:center;
-    margin-bottom:25px;
-}
-
 .profile-border{
     width:130px;
     height:130px;
@@ -34,21 +29,6 @@ body{
     background: linear-gradient(135deg,#667eea,#764ba2);
     padding:2px;
     margin:auto;
-}
-
-.profile-img{
-    width:100%;
-    height:100%;
-    border-radius:50%;
-    object-fit:cover;
-    cursor:pointer;
-    background:white;
-}
-
-.upload-text{
-    font-size:13px;
-    color:#777;
-    margin-top:8px;
 }
 
 .k-textbox{
@@ -91,4 +71,66 @@ body{
 
 .redirect:hover{
     transform: scale(1.2);
+}
+
+.k-form-field{
+    margin-bottom:20px;
+}
+
+.k-form-label{
+    margin-bottom:10px !important;
+    font-weight:500;
+}
+
+.k-textbox,
+.k-input{
+    height:45px;
+    border-radius:6px !important;
+}
+
+.profile-container{
+text-align:center;
+margin-bottom:25px;
+}
+
+.profile-wrapper{
+position:relative;
+width:120px;
+height:120px;
+margin:auto;
+cursor:pointer;
+}
+
+.profile-img{
+width:120px;
+height:120px;
+border-radius:50%;
+border:4px solid #5a67d8;
+padding:4px;
+background:white;
+object-fit:cover;
+transition:0.3s;
+}
+
+.profile-img:hover{
+opacity:0.85;
+}
+
+.upload-icon{
+position:absolute;
+bottom:5px;
+right:5px;
+width:32px;
+height:32px;
+background:#5a67d8;
+color:white;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+border:2px solid white;
+}
+
+.k-upload{
+display:none !important;
 }

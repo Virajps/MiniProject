@@ -1,0 +1,93 @@
+<div class="card shadow-lg">
+
+<div class="card-body">
+
+<h4 class="form-title">Login</h4>
+
+
+<form id="login"></form>
+<div class="text-center mt-3">
+    <span class="text-muted">Don't have an account?</span>
+    <a href="Register" class="redirect fw-bold text-decoration-none">
+        Register
+    </a>
+</div>
+</div>
+</div>
+
+
+@section Scripts{
+<script>
+    $("#login").kendoForm({
+        formData:{
+            email:"",
+            password:""
+        },
+        validatable:{
+            validateOnBlur:true,
+            validationSummary:false,
+            errorTemplate:"<span class='k-form-error'>#:message#</span>"
+        },
+        items:[
+
+            {
+                field:"email",
+                label:"Email",
+                editor:"TextBox",
+                validation:{
+                    required:{message:"Email address is required."},
+                    email: { message: "Please enter a valid email address." }
+                },
+                editorOptions:{
+                    placeholder:"Enter your email address"
+                }
+            },
+
+                {
+                field:"password",
+                label:"Password",
+                editor:"TextBox",
+                validation:{
+                    required:{message:"password is Required"},
+                },
+                attributes:{
+                    type:"password",
+                    placeholder:"Enter your password"
+                }
+            }
+        ],
+        buttonsTemplate:
+            '<button class="btn btn-primary submit-btn mt-3">Login</button>',
+
+        submit:function(e){
+
+            e.preventDefault();
+
+            let formdata=new FormData();
+
+            formdata.append("name",$("input[name='name']").val());
+            formdata.append("email",$("input[name='email']").val());
+            formdata.append("password",$("input[name='password']").val());
+            formdata.append("gender",$("input[name='gender']:checked").val());
+            formdata.append("profileImage",$("#profileImageInput")[0].files[0]);
+
+            $.ajax({
+
+                url:"/User/Login",
+                type:"POST",
+                data:formdata,
+                contentType:false,
+                processData:false,
+
+                success:function(res){
+                    alert("Registration Successful");
+                    console.log(res);
+                }
+
+            });
+
+        }
+    })
+
+</script>
+}

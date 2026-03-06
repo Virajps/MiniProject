@@ -93,6 +93,7 @@ namespace MyApp.Namespace
                 ViewData["message"] = "There was some error while Registration"; 
             }
         }
+        
         return View();
         }
     }
