@@ -15,5 +15,7 @@ namespace Repositories.Interfaces
         public Task<t_Employee> UpdateUserStatus(int EmployeeId, string Status);
 
         public Task<int> ChangePassword(vm_ChangePassword changePassword);
+
+       
     }
 }
