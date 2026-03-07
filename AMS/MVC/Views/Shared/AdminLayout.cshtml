@@ -45,11 +45,22 @@
             color: #1f2937;
         }
 
+        /* Active sidebar item */
+
         #adminSidebarPanelBar .k-selected > .k-link,
         #adminSidebarPanelBar .k-state-selected > .k-link {
             background: #e0f2fe;
-            color: #0b6e99;
+            color: #1ca7ec;
         }
+
+        /* Sidebar hover */
+
+        #adminSidebarPanelBar .k-link:hover {
+            background: #f0f9ff;
+            color: #1ca7ec;
+        }
+
+        /* Profile menu */
 
         #profileMenu {
             border: none;
@@ -66,12 +77,14 @@
             margin-top: 0.5rem;
         }
 
+        /* Profile icon */
+
         .profile-trigger {
             width: 42px;
             height: 42px;
             border-radius: 50%;
-            border: 2px solid #dbeafe;
-            background: #f0f9ff;
+            border: 2px solid #1ca7ec;
+            background: #e0f2fe;
             overflow: hidden;
             display: inline-flex;
             align-items: center;
@@ -86,15 +99,67 @@
             display: block;
         }
 
+        .profile-trigger .k-icon {
+            color: #1ca7ec;
+        }
+
+        /* Sidebar toggle button */
+
+        #sidebarToggleBtn {
+            display: none;
+            border-color: #1ca7ec;
+            color: #1ca7ec;
+        }
+
+        #sidebarToggleBtn:hover {
+            background: #1ca7ec;
+            color: #fff;
+        }
+
+        /* Profile dropdown colors */
+
+        #profileMenu .k-link {
+            color: #1ca7ec !important;
+        }
+
+        #profileMenu .k-link:hover {
+            color: #0ea5e9 !important;
+            background: #f0f9ff !important;
+        }
+
+        #profileMenu .k-item:hover > .k-link {
+            background: #e0f2fe !important;
+            color: #1ca7ec !important;
+        }
+
+        #profileMenu .k-state-selected > .k-link,
+        #profileMenu .k-selected > .k-link {
+            background: #e0f2fe !important;
+            color: #1ca7ec !important;
+        }
+
+        /* Dropdown buttons */
+
+        #profileMenu .k-button {
+            border-color: #1ca7ec;
+            color: #1ca7ec;
+        }
+
+        #profileMenu .k-button:hover {
+            background: #1ca7ec;
+            color: white;
+        }
+
+        /* Sidebar overlay */
+
         .sidebar-backdrop {
             display: none;
         }
 
-        #sidebarToggleBtn {
-            display: none;
-        }
+        /* Mobile layout */
 
         @@media (max-width: 991px) {
+
             .admin-sidebar {
                 width: min(82vw, 290px);
                 position: fixed !important;
