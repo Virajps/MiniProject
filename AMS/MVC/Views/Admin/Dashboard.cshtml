@@ -325,101 +325,92 @@ a.k-link:hover{
 </div>
 @section Scripts{
 
-<script>
+    <script>
 
-var taskData = @Html.Raw(Json.Serialize(Model.TaskHours));
+        var taskData = @Html.Raw(Json.Serialize(Model.TaskHours));
 
-$("#taskChart").kendoChart({
-    title:{ text:"Task Working Hours"},
-    legend:{ position:"bottom" },
-
-    tooltip:{
-        visible:true,
-        format:"{0} hrs"
-    },
-    
-
-    chartArea: {
+        $("#taskChart").kendoChart({
+            title:{ text:"Task Working Hours"},
+            legend:{ position:"bottom" },
+            tooltip:{
+                visible:true,
+                format:"{0} hrs"
+            },
+            
+            chartArea: {
                 background: "transparent"
             },
             seriesColors: ["#166f99", "#2185b4","#B0DFE5", "#319fd2", "#3eaee2", "#89CFF0"],
-        seriesDefaults: {
+            seriesDefaults: {
                 type: "donut",
                 startAngle: 300
+            }, 
+            series:[{
+                field:"hours",
+                categoryField:"task",
+                data:taskData,
+                overlay:{
+                gradient:"none"
+                },
+                labels:{
+                    visible:true,
+                    position: "outsideEnd",
+                    background: "transparent",
+                    template:"#= category #"
+                }
+            }]
+        });
+
+        var attendance = @Html.Raw(Json.Serialize(Model.RecentAttendance));
+
+        $("#attendanceGrid").kendoGrid({
+            dataSource:{
+                data:attendance,
+                pageSize:5
             },
-            
-    series:[{
-        field:"hours",
-        categoryField:"task",
-        data:taskData,
-        overlay:{
-        gradient:"none"   // 🔹 removes 3D gradient
-        },
-        labels:{
-            visible:true,
-            position: "outsideEnd",
-            background: "transparent",
-            template:"#= category #"
-        }
-    }]
-});
+            height:350,
+            sortable:true,
+            pageable:{
+                refresh:true,
+                pageSizes:[5,10,20]
+            },
+            columns:[
+                { field:"employeeName", title:"Employee", width:150 },
 
-var attendance = @Html.Raw(Json.Serialize(Model.RecentAttendance));
+                { field:"checkIn", title:"Check In", width:120 },
 
-$("#attendanceGrid").kendoGrid({
-    dataSource:{
-        data:attendance,
-        pageSize:5
-    },
-    height:350,
-    sortable:true,
-    pageable:{
-        refresh:true,
-        pageSizes:[5,10,20]
-    },
-    columns:[
-        { field:"employeeName", title:"Employee", width:150 },
+                { field:"checkOut", title:"Check Out", width:120 },
 
-        { field:"checkIn", title:"Check In", width:120 },
+                {
+                    field:"status",
+                    title:"Status",
+                    width:130,
+                    template:function(data){
+                        let color="badge-regular";
 
-        { field:"checkOut", title:"Check Out", width:120 },
+                        if(data.status==="LateIn") color="badge-late";
+                        if(data.status==="EarlyOut") color="badge-early";
 
-        {
-            field:"status",
-            title:"Status",
-            width:130,
-            template:function(data){
-                let color="badge-regular";
+                        return `<span class="status-badge ${color}">${data.status}</span>`;
+                    }
+                }
+            ]
+        });
 
-                if(data.status==="LateIn") color="badge-late";
-                if(data.status==="EarlyOut") color="badge-early";
+        function resizeKendoWidgets(){
+            var chart = $("#taskChart").data("kendoChart");
+            if(chart){
+                chart.resize();
+            }
 
-                return `<span class="status-badge ${color}">${data.status}</span>`;
+            var grid = $("#attendanceGrid").data("kendoGrid");
+            if(grid){
+                grid.resize();
             }
         }
-    ]
-});
 
-function resizeKendoWidgets(){
-    var chart = $("#taskChart").data("kendoChart");
-    if(chart){
-        chart.resize();
-    }
-
-    var grid = $("#attendanceGrid").data("kendoGrid");
-    if(grid){
-        grid.resize();
-    }
-}
-
-$("#sidebarToggleBtn").on("click",function(){
-    setTimeout(resizeKendoWidgets,300);
-});
-
-$(window).on("resize",function(){
-    resizeKendoWidgets();
-});
-
-</script>
-
+        $(window).on("resize",function(){
+            resizeKendoWidgets();
+        });
+    </script>
 }

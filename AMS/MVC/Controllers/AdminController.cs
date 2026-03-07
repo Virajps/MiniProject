@@ -42,5 +42,28 @@ namespace MyApp.Namespace
 
             return Json(data);
         }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateUserStatus(int EmployeeId, string Status)
+        {
+            System.Console.WriteLine(EmployeeId + "" + Status);
+            var result = await _employee.UpdateUserStatus(EmployeeId, Status);
+            System.Console.WriteLine(result);
+
+            if (result)
+            {
+                return Ok(new { success = true, message = "Status updated successfully" });
+            }
+            else
+            {
+                return BadRequest(new { success = false, message = "Failed to update status" });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> AccessControl()
+        {
+            return View();
+        }
     }
 }
