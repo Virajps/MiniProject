@@ -138,7 +138,7 @@
                 dataSource: {
                     transport: {
                         read: {
-                            url: "/Employee/GetAllUsers",
+                            url: "/Admin/AccessControlData",
                             dataType: "json"
                         }
                     },
@@ -159,6 +159,7 @@
                     { field: "employeeId", title: "Employee ID", width: "120px" },
                     { field: "name", title: "Name" },
                     { field: "email", title: "Email" },
+                    { field: "totalHour", title: "Total Working Hour" },
                     {
                         title: "Status",
                         template: function(dataItem){
