@@ -218,8 +218,8 @@
             </div>
 
             <ul id="adminSidebarPanelBar" class="mb-0" style="align-items: center;">
-                <li class="@(currentController == "admin" && currentAction == "Dashboard" ? "k-selected" : "")">
-                    <a href="@Url.Action("Dashboard", "admin")">
+                <li class="@(currentController == "Admin" && currentAction == "Dashboard" ? "k-selected" : "")">
+                    <a href="@Url.Action("Dashboard", "Admin")">
                         <div class="row">
                             <div class="col-3">
                                 <i class="fi fi-rr-dashboard" style="margin-right: 8%;font-size:18px"></i>
@@ -230,8 +230,8 @@
                         </div>
                     </a>
                 </li>
-                <li class="@(currentController == "admin" && currentAction == "History" ? "k-selected" : "")">
-                    <a href="@Url.Action("History", "admin")">
+                <li class="@(currentController == "Admin" && currentAction == "History" ? "k-selected" : "")">
+                    <a href="@Url.Action("History", "Admin")">
                         <div class="row">
                             <div class="col-2">
                                 <i class="fi fi-rr-time-past" style="margin-right: 8%;font-size:18px"></i>
@@ -242,8 +242,8 @@
                         </div>
                     </a>
                 </li>
-                <li class="@(currentController == "admin" && currentAction == "AccessControl" ? "k-selected" : "")">
-                    <a href="@Url.Action("AccessControl", "admin")">
+                <li class="@(currentController == "Admin" && currentAction == "AccessControl" ? "k-selected" : "")">
+                    <a href="@Url.Action("AccessControl", "Admin")">
                         <div class="row">
                             <div class="col-2">
                                 <i class="fi fi-rr-user-key" style="margin-right: 8%;font-size:18px"></i>
