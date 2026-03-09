@@ -31,9 +31,13 @@ namespace MyApp.Namespace
         [HttpPost]
         public async Task<IActionResult> ClockIn(string workType)
         {
-            int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
+            int? empId = HttpContext.Session.GetInt32("EmployeeId");
+            if (empId == null || empId <= 0)
+            {
+                return Unauthorized(new { success = false, message = "Employee session not found." });
+            }
 
-            var result = await _repo.ClockIn(empId, workType);
+            var result = await _repo.ClockIn(empId.Value, workType);
 
             if (result == 1)
                 return Ok(new { success = true, message = "Clock-In successful" });
@@ -47,10 +51,13 @@ namespace MyApp.Namespace
         [HttpPost]
         public async Task<IActionResult> ClockOut(List<string> taskTypes)
         {
-            int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
-            // int empId = 22;
+            int? empId = HttpContext.Session.GetInt32("EmployeeId");
+            if (empId == null || empId <= 0)
+            {
+                return Unauthorized(new { success = false, message = "Employee session not found." });
+            }
 
-            var result = await _repo.ClockOut(empId, taskTypes);
+            var result = await _repo.ClockOut(empId.Value, taskTypes);
 
             if (result == 1)
                 return Ok(new { success = true, message = "Clock-Out successful" });
@@ -66,22 +73,52 @@ namespace MyApp.Namespace
             return View();
         }
 
-        [HttpPut]
-        public async Task<IActionResult> ChangePassword(vm_ChangePassword changePassword)
+        [AcceptVerbs("POST", "PUT")]
+        public async Task<IActionResult> ChangePassword([FromForm] vm_ChangePassword changePassword)
         {
+            int? empId = HttpContext.Session.GetInt32("EmployeeId");
+            if (empId == null || empId <= 0)
+            {
+                return Unauthorized(new { success = false, message = "Employee session not found." });
+            }
+
+            if (string.IsNullOrWhiteSpace(changePassword.OldPassword) ||
+                string.IsNullOrWhiteSpace(changePassword.NewPassword) ||
+                string.IsNullOrWhiteSpace(changePassword.ConfirmPassword))
+            {
+                return BadRequest(new { success = false, message = "All password fields are required." });
+            }
+
+            if (!string.Equals(changePassword.NewPassword, changePassword.ConfirmPassword, StringComparison.Ordinal))
+            {
+                return BadRequest(new { success = false, message = "New password and confirm password do not match." });
+            }
+
+            var currentUser = await _employee.GetUserById(empId.Value);
+            if (currentUser == null)
+            {
+                return BadRequest(new { success = false, message = "User not found." });
+            }
+
+            if (!string.Equals(currentUser.Password, changePassword.OldPassword, StringComparison.Ordinal))
+            {
+                return BadRequest(new { success = false, message = "Current password is incorrect." });
+            }
+
+            changePassword.EmployeeId = empId.Value;
 
             var result = await _employee.ChangePassword(changePassword);
             if (result == 0)
             {
-                return Ok(new { success = false, message = "Internal Server Error" });
+                return Ok(new { success = false, message = "Failed to update password." });
             }
             else if (result > 0)
             {
-                return Ok(new { success = true, message = "Passsword Updated Successfull!" });
+                return Ok(new { success = true, message = "Password updated successfully." });
             }
             else
             {
-                return Ok(new { success = false, message = "failed to change password" });
+                return Ok(new { success = false, message = "Failed to change password." });
             }
         }
         [HttpGet]
@@ -191,9 +228,23 @@ namespace MyApp.Namespace
         [HttpGet]
         public async Task<IActionResult> AttendanceChart(string type, DateTime date)
         {
-            int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
+            int? empId = HttpContext.Session.GetInt32("EmployeeId");
+            if (empId == null || empId <= 0)
+            {
+                return Unauthorized(new { success = false, message = "Employee session not found." });
+            }
 
-            var data = await _repo.GetAttendanceChart(empId, type, date);
+            if (string.IsNullOrWhiteSpace(type))
+            {
+                type = "week";
+            }
+
+            if (date == default)
+            {
+                date = DateTime.Today;
+            }
+
+            var data = await _repo.GetAttendanceChart(empId.Value, type.ToLowerInvariant(), date);
 
             if (data != null)
             {
@@ -206,6 +257,38 @@ namespace MyApp.Namespace
         }
 
         [HttpGet]
+        public async Task<IActionResult> TotalHoursAllYears()
+        {
+            int? empId = HttpContext.Session.GetInt32("EmployeeId");
+            if (empId == null || empId <= 0)
+            {
+                return Unauthorized(new { success = false, message = "Employee session not found." });
+            }
+
+            var attendance = await _repo.GetAttendanceScheduler(empId.Value);
+            int totalHours = attendance?.Sum(x => x.WorkingHour) ?? 0;
+
+            return Ok(new
+            {
+                success = true,
+                totalHours = totalHours
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTaskSummary()
+        {
+            int? empId = HttpContext.Session.GetInt32("EmployeeId");
+            if (empId == null || empId <= 0)
+            {
+                return Unauthorized(new { success = false, message = "Employee session not found." });
+            }
+
+            var data = await _repo.GetEmployeeTaskSummary(empId.Value);
+            return Ok(new { success = true, data = data ?? new List<vm_TaskSummary>() });
+        }
+
+        [HttpGet]
         public async Task<IActionResult> Scheduler()
         {
             return View();
@@ -214,9 +297,13 @@ namespace MyApp.Namespace
         [HttpGet]
         public async Task<IActionResult> GetAttendanceScheduler()
         {
-            int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
+            int? empId = HttpContext.Session.GetInt32("EmployeeId");
+            if (empId == null || empId <= 0)
+            {
+                return Unauthorized(new { success = false, message = "Employee session not found." });
+            }
 
-            var data = await _repo.GetAttendanceScheduler(empId);
+            var data = await _repo.GetAttendanceScheduler(empId.Value);
 
             if (data != null)
             {

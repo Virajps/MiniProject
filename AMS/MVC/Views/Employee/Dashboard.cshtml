@@ -3,38 +3,305 @@
     Layout = "~/Views/Shared/EmployeeLayout.cshtml";
 }
 
-<div class="row g-3">
-    <div class="col-md-6">
-        <div class="k-card">
-            <div class="k-card-body">
-                <h5 class="k-card-title mb-2">Employee Dashboard</h5>
-                <p class="mb-3">Welcome to your dashboard.</p>
-                <button id="markAttendanceBtn">Mark Attendance</button>
-            </div>
+<style>
+    .all-years-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1050;
+    }
+
+    .all-years-modal.d-none {
+        display: none !important;
+    }
+
+    .all-years-modal-card {
+        width: min(92vw, 430px);
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+        border-left: 5px solid #4f6bed;
+        padding: 20px;
+    }
+
+    .all-years-value {
+        font-size: 30px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .task-summary-wrap {
+        margin-top: 20px;
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    }
+</style>
+
+
+<div class="dashboard">
+
+    <h4 class="mb-4">Total Working Hours</h4>
+    <div id="dashboardAlert" class="alert alert-danger d-none" role="alert"></div>
+    <div class="controls d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <button class="periodBtn periodFilterBtn active" data-period="week">This Week</button>
+            <button class="periodBtn periodFilterBtn" data-period="month">This Month</button>
+            <button class="periodBtn periodFilterBtn" data-period="year">This Year</button>
+        </div>
+        <div>
+            <button id="allYearsTotalBtn" type="button" class="periodBtn">All Years Total</button>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="k-card">
-            <div class="k-card-body">
-                <h5 class="k-card-title mb-2">Task Progress</h5>
-                <div id="taskProgress"></div>
-            </div>
+
+    <div class="cards">
+
+        <div class="card total">
+            <div class="card-title">Total Hours</div>
+            <div id="totalHours" class="card-value">0</div>
+        </div>
+
+        <div class="card avg">
+            <div class="card-title">Average Hours</div>
+            <div id="avgHours" class="card-value">0</div>
+        </div>
+
+        <div class="card latein">
+            <div class="card-title">Late In</div>
+            <div id="latein" class="card-value">3</div>
+        </div>
+
+        <div class="card earlyout">
+            <div class="card-title">Early Out</div>
+            <div id="earlyout" class="card-value">2</div>
+        </div>
+
+    </div>
+
+    <div class="chartCard">
+        <div id="workingHoursChart"></div>
+    </div>
+
+    <div class="task-summary-wrap">
+        <h5 class="mb-3">Task Summary</h5>
+        <div id="taskSummaryChart"></div>
+    </div>
+
+    <div id="allYearsTotalDialog" class="all-years-modal d-none">
+        <div class="all-years-modal-card">
+            <h5 class="mb-2">All Years Total Hours</h5>
+            <p class="mb-2 text-muted">Total working hours across all attendance records:</p>
+            <div id="allYearsTotalValue" class="all-years-value mb-3">0</div>
+            <button id="allYearsOkBtn" type="button" class="periodBtn active">OK</button>
         </div>
     </div>
+
 </div>
 
 @section Scripts {
     <script>
         $(function () {
-            $("#markAttendanceBtn").kendoButton({
-                themeColor: "primary",
-                icon: "calendar"
+            function showDashboardError(message) {
+                const $alert = $("#dashboardAlert");
+                $alert.text(message || "Unable to load chart data.").removeClass("d-none");
+            }
+
+            function clearDashboardError() {
+                $("#dashboardAlert").addClass("d-none").text("");
+            }
+
+            $("#workingHoursChart").kendoChart({
+                title:{
+                    text:"Working Hours"
+                },
+                series:[{
+                    type:"column",
+                    field:"hours",
+                    categoryField:"period",
+                    name:"Hours",
+                    color:"#4f6bed"
+                }],
+                categoryAxis:{
+                    labels:{ rotation:-45 }
+                },
+                valueAxis:{
+                    title:{ text:"Hours" }
+                },
+                tooltip:{
+                    visible:true,
+                    template:"#= category #: #= value # hrs"
+                },
+                dataSource:{
+                    data:[]
+                }
             });
 
-            $("#taskProgress").kendoProgressBar({
-                type: "percent",
-                value: 65
+            $("#taskSummaryChart").kendoChart({
+                title: {
+                    text: "Task Hours Distribution"
+                },
+                legend: {
+                    position: "bottom"
+                },
+                seriesDefaults: {
+                    labels: {
+                        visible: true,
+                        background: "transparent",
+                        template: "#= category #: #= value #h"
+                    }
+                },
+                series: [{
+                    type: "pie",
+                    field: "value",
+                    categoryField: "category",
+                    colorField: "color",
+                    data: [
+                        { category: "Developing", value: 0, color: "#4f6bed" },
+                        { category: "Designing", value: 0, color: "#00b894" },
+                        { category: "Research", value: 0, color: "#ed4f4f" }
+                    ]
+                }],
+                tooltip: {
+                    visible: true,
+                    template: "#= category #: #= value # hours"
+                }
             });
+
+            $(".periodFilterBtn").click(function(){
+
+                $(".periodFilterBtn").removeClass("active");
+                $(this).addClass("active");
+
+                var period=$(this).data("period");
+
+                loadChartData(period);
+
+            });
+
+            $("#allYearsTotalBtn").on("click", function () {
+                $.ajax({
+                    url: "/Employee/TotalHoursAllYears",
+                    type: "GET",
+                    success: function (res) {
+                        if (!res || res.success === false) {
+                            showDashboardError(res?.message || "Failed to load all years total.");
+                            return;
+                        }
+
+                        clearDashboardError();
+                        const total = Number(res.totalHours ?? res.TotalHours ?? 0);
+                        $("#allYearsTotalValue").text(total);
+                        $("#allYearsTotalDialog").removeClass("d-none");
+                    },
+                    error: function (xhr) {
+                        const message = xhr?.responseJSON?.message || "Failed to load all years total.";
+                        showDashboardError(message);
+                    }
+                });
+            });
+
+            $("#allYearsOkBtn").on("click", function () {
+                $("#allYearsTotalDialog").addClass("d-none");
+            });
+
+            function loadChartData(period){
+                $.ajax({
+                    url: "/Employee/AttendanceChart",
+                    type: "GET",
+                    data: {
+                        date: new Date().toISOString().split("T")[0],
+                        type: period
+                    },
+                    success: function (res) {
+                        if (res && res.success === false) {
+                            showDashboardError(res.message);
+                            return;
+                        }
+
+                        clearDashboardError();
+
+                        const chartItems = res?.chartData || res?.ChartData || [];
+                        const mappedData = chartItems.map(function (item) {
+                            return {
+                                period: item.label || item.Label || "",
+                                hours: Number(item.hours ?? item.Hours ?? 0)
+                            };
+                        });
+
+                        const totalHours = Number(res?.totalHours ?? res?.TotalHours ?? mappedData.reduce(function (sum, x) {
+                            return sum + x.hours;
+                        }, 0));
+
+                        const avgHours = mappedData.length ? (totalHours / mappedData.length).toFixed(2) : "0.00";
+
+                        $("#totalHours").text(totalHours);
+                        $("#avgHours").text(avgHours);
+
+                        const chart = $("#workingHoursChart").data("kendoChart");
+                        chart.dataSource.data(mappedData);
+                    },
+                    error: function (xhr) {
+                        const message = xhr?.responseJSON?.message || "Failed to load attendance chart.";
+                        showDashboardError(message);
+                        $("#totalHours").text("0");
+                        $("#avgHours").text("0.00");
+                        const chart = $("#workingHoursChart").data("kendoChart");
+                        chart.dataSource.data([]);
+                    }
+                });
+            }
+
+            function loadTaskSummary() {
+                $.ajax({
+                    url: "/Employee/GetTaskSummary",
+                    type: "GET",
+                    success: function (res) {
+                        if (!res || res.success === false) {
+                            showDashboardError(res?.message || "Failed to load task summary.");
+                            return;
+                        }
+
+                        const items = res.data || [];
+                        let developing = 0;
+                        let designing = 0;
+                        let research = 0;
+
+                        items.forEach(function (item) {
+                            const taskType = (item.taskType || item.TaskType || "").toString().trim().toLowerCase();
+                            const total = Number(item.totalHours ?? item.TotalHours ?? 0);
+
+                            if (taskType.startsWith("develop")) {
+                                developing += total;
+                            } else if (taskType.startsWith("design")) {
+                                designing += total;
+                            } else if (taskType.startsWith("research")) {
+                                research += total;
+                            }
+                        });
+
+                        const pieData = [
+                            { category: "Developing", value: developing, color: "#4f6bed" },
+                            { category: "Designing", value: designing, color: "#00b894" },
+                            { category: "Research", value: research, color: "#ed4f4f" }
+                        ];
+
+                        const taskChart = $("#taskSummaryChart").data("kendoChart");
+                        taskChart.dataSource.data(pieData);
+                    },
+                    error: function (xhr) {
+                        showDashboardError(xhr?.responseJSON?.message || "Failed to load task summary.");
+                    }
+                });
+            }
+
+            loadChartData("week");
+            loadTaskSummary();
+
+
         });
     </script>
 }

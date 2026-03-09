@@ -76,7 +76,7 @@ namespace Repositories.Implementations
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "SELECT c_empid, c_name, c_email, c_gender, c_role, c_image, c_status FROM t_employee WHERE c_empid = @empid",
+                    "SELECT c_empid, c_name, c_email, c_password, c_gender, c_role, c_image, c_status FROM t_employee WHERE c_empid = @empid",
                     _conn);
                 cmd.Parameters.AddWithValue("@empid", EmployeeId);
 
@@ -89,6 +89,7 @@ namespace Repositories.Implementations
                         EmployeeId = reader.GetInt32(reader.GetOrdinal("c_empid")),
                         Name = reader["c_name"]?.ToString(),
                         Email = reader["c_email"]?.ToString(),
+                        Password = reader["c_password"]?.ToString(),
                         Gender = reader["c_gender"]?.ToString(),
                         Role = reader["c_role"]?.ToString(),
                         Image = reader["c_image"]?.ToString(),
