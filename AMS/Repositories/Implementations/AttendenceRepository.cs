@@ -26,19 +26,20 @@ namespace Repositories.Implementations
                 await _conn.CloseAsync();
 
                 using var cmd = new NpgsqlCommand(@"
-                SELECT 
-                    task,
-                    SUM(c_workinghour/task_count) AS hours
-                FROM(
-                    SELECT 
-                        UNNEST(STRING_TO_ARRAY(c_tasktype),',')AS task,
-                        c_workinghour,
-                        ARRAY_LENGTH(STRING_TO_ARRAY(c_tasktype,','),1) AS task_count
-                    FROM t_attendace
-                    WHERE c_empid=@empid
-                    AND c_tasktype IS NOT NULL
-                )sub
-                GROUP BY task;", _conn);
+    SELECT 
+        task,
+        SUM(c_workinghour::numeric / task_count) AS hours
+    FROM (
+        SELECT 
+            UNNEST(STRING_TO_ARRAY(c_tasktype, ',')) AS task,
+            c_workinghour,
+            ARRAY_LENGTH(STRING_TO_ARRAY(c_tasktype, ','), 1) AS task_count
+        FROM t_attendance
+        WHERE c_empid = @empid
+        AND c_tasktype IS NOT NULL
+    ) sub
+    GROUP BY task;
+", _conn);
 
                 cmd.Parameters.AddWithValue("@empid", EmployeeId);
                 await _conn.OpenAsync();
@@ -48,7 +49,7 @@ namespace Repositories.Implementations
                     list.Add(new vm_TaskSummary
                     {
                         TaskType = r["task"]?.ToString(),
-                        TotalHours = Convert.ToInt32(r["hours"]?.ToString() ?? "0")
+                        TotalHours = Convert.ToInt32(Convert.ToDecimal(r["hours"]))
                     });
                 }
             }
@@ -116,7 +117,7 @@ namespace Repositories.Implementations
                 using var cmd = new NpgsqlCommand(
                     "SELECT * FROM t_attendance WHERE c_empid=@id AND c_attenddate=@today", _conn);
                 cmd.Parameters.AddWithValue("@id", empId);
-                cmd.Parameters.AddWithValue("@today", DateTime.Today);
+                cmd.Parameters.AddWithValue("@today", DateOnly.FromDateTime(DateTime.Today));
                 await _conn.OpenAsync();
                 using var r = await cmd.ExecuteReaderAsync();
                 if (await r.ReadAsync()) att = MapRow(r);
@@ -128,11 +129,13 @@ namespace Repositories.Implementations
 
         private static t_Attendance MapRow(NpgsqlDataReader r)
         {
+            var dateOnly = r.GetFieldValue<DateOnly>(r.GetOrdinal("c_attenddate"));
+
             return new t_Attendance
             {
                 AttendId = r.GetInt32(r.GetOrdinal("c_attendid")),
                 EmpId = r.GetInt32(r.GetOrdinal("c_empid")),
-                AttendDate = r.GetDateTime(r.GetOrdinal("c_attenddate")),
+                AttendDate = dateOnly.ToDateTime(TimeOnly.MinValue),
                 ClockInHour = r["c_clockinhour"] == DBNull.Value ? null : Convert.ToInt32(r["c_clockinhour"]),
                 ClockInMin = r["c_clockinmin"] == DBNull.Value ? null : Convert.ToInt32(r["c_clockinmin"]),
                 ClockOutHour = r["c_clockouthour"] == DBNull.Value ? null : Convert.ToInt32(r["c_clockouthour"]),
@@ -272,7 +275,7 @@ namespace Repositories.Implementations
                     @"INSERT INTO t_attendance (c_empid, c_attenddate, c_clockinhour, c_clockinmin, c_attendstatus, c_worktype)
                       VALUES (@empid, @date, @hour, @min, @status, @wtype)", _conn);
                 cmd.Parameters.AddWithValue("@empid", empId);
-                cmd.Parameters.AddWithValue("@date", DateTime.Today);
+                cmd.Parameters.AddWithValue("@date", DateOnly.FromDateTime(DateTime.Today));
                 cmd.Parameters.AddWithValue("@hour", now.Hour);
                 cmd.Parameters.AddWithValue("@min", now.Minute);
                 cmd.Parameters.AddWithValue("@status", status);
@@ -312,7 +315,7 @@ namespace Repositories.Implementations
                 cmd.Parameters.AddWithValue("@status", status);
                 cmd.Parameters.AddWithValue("@task", taskJoined);
                 cmd.Parameters.AddWithValue("@id", empId);
-                cmd.Parameters.AddWithValue("@today", DateTime.Today);
+                cmd.Parameters.AddWithValue("@today", DateOnly.FromDateTime(DateTime.Today));
                 await _conn.OpenAsync();
                 await cmd.ExecuteNonQueryAsync();
                 return 1;
