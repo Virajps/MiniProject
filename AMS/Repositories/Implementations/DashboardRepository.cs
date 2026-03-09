@@ -18,7 +18,7 @@ namespace Repositories.Implementations
 
             // 1️⃣ Total Employees
             using (var cmd = new NpgsqlCommand(
-                "SELECT COUNT(*) FROM t_employee", _conn))
+                "SELECT COUNT(*) FROM t_employee WHERE c_role='Employee'", _conn))
             {
                 model.TotalEmployees = Convert.ToInt32(cmd.ExecuteScalar());
             }
@@ -33,8 +33,8 @@ namespace Repositories.Implementations
             // 3️⃣ Present Today
             using (var cmd = new NpgsqlCommand(@"
         SELECT COUNT(*) 
-        FROM t_attendance 
-        WHERE c_attenddate = CURRENT_DATE", _conn))
+        FROM t_attendance JOIN t_employee ON t_attendance.c_empid = t_employee.c_empid
+        WHERE c_attenddate = CURRENT_DATE AND t_employee.c_role = 'Employee'", _conn))
             {
                 model.PresentToday = Convert.ToInt32(cmd.ExecuteScalar());
             }
@@ -48,7 +48,7 @@ namespace Repositories.Implementations
             SELECT c_empid 
             FROM t_attendance 
             WHERE c_attenddate = CURRENT_DATE
-        )", _conn))
+        ) AND c_role = 'Employee'", _conn))
             {
                 model.AbsentToday = Convert.ToInt32(cmd.ExecuteScalar());
             }

@@ -39,7 +39,7 @@ namespace Repositories.Implementations
             try
             {
                 using var cmd = new NpgsqlCommand(
-                    "SELECT c_empid, c_name, c_email, c_gender, c_role, c_image, c_status FROM t_employee ORDER BY c_empid",
+                    "SELECT c_empid, c_name, c_email, c_gender, c_role, c_image, c_status FROM t_employee WHERE c_role = 'Employee' ORDER BY c_empid",
                     _conn);
 
                 await _conn.OpenAsync();
