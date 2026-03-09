@@ -192,8 +192,7 @@ namespace MyApp.Namespace
         [HttpGet]
         public async Task<IActionResult> AttendanceChart(string type, DateTime date)
         {
-            // int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
-            int empId = 22;
+            int empId = Convert.ToInt32(HttpContext.Session.GetString("EmpId"));
 
             var data = await _repo.GetAttendanceChart(empId, type, date);
 
