@@ -40,6 +40,98 @@
         padding: 20px;
         box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
     }
+
+    .attendance-summary-wrap {
+        margin-top: 20px;
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .attendance-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+        font-size: 13px;
+    }
+
+    .attendance-summary-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(120px, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .attendance-stat-item {
+        background: #f8f9fc;
+        border: 1px solid #e6e9f5;
+        border-radius: 8px;
+        padding: 12px;
+    }
+
+    .attendance-stat-label {
+        font-size: 12px;
+        color: #64748b;
+    }
+
+    .attendance-stat-value {
+        font-size: 22px;
+        line-height: 1.2;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .attendance-badge {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .attendance-badge.present {
+        background: #4CAF50;
+    }
+
+    .attendance-badge.absent {
+        background: #F44336;
+    }
+
+    .attendance-badge.onleave {
+        background: #f59e0b;
+        color: #111827;
+    }
+
+    #attendanceScheduler {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .attendance-event {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 4px;
+        color: #fff;
+    }
+
+    .attendance-event.present {
+        background: #4CAF50;
+    }
+
+    .attendance-event.absent {
+        background: #F44336;
+    }
+
+    .attendance-event.onleave {
+        background: #f59e0b;
+        color: #111827;
+    }
 </style>
 
 
@@ -89,6 +181,30 @@
     <div class="task-summary-wrap">
         <h5 class="mb-3">Task Summary</h5>
         <div id="taskSummaryChart"></div>
+    </div>
+
+    <div class="attendance-summary-wrap">
+        <h5 class="mb-3">Attendance Summary</h5>
+        <div class="attendance-summary-stats">
+            <div class="attendance-stat-item">
+                <div class="attendance-stat-label">Present</div>
+                <div id="presentCount" class="attendance-stat-value">0</div>
+            </div>
+            <div class="attendance-stat-item">
+                <div class="attendance-stat-label">Absent</div>
+                <div id="absentCount" class="attendance-stat-value">0</div>
+            </div>
+            <div class="attendance-stat-item">
+                <div class="attendance-stat-label">On Leave</div>
+                <div id="onLeaveCount" class="attendance-stat-value">0</div>
+            </div>
+        </div>
+        <div class="attendance-legend">
+            <span class="attendance-badge present">Present</span>
+            <span class="attendance-badge absent">Absent</span>
+            <span class="attendance-badge onleave">On Leave</span>
+        </div>
+        <div id="attendanceScheduler"></div>
     </div>
 
     <div id="allYearsTotalDialog" class="all-years-modal d-none">
@@ -298,8 +414,164 @@
                 });
             }
 
+            function initAttendanceScheduler() {
+                let currentSchedulerDate = new Date();
+
+                function getStatusClass(status) {
+                    const normalized = (status || "").toString().trim().toLowerCase();
+                    if (normalized === "present") return "present";
+                    if (normalized === "absent") return "absent";
+                    if (normalized === "on leave" || normalized === "onleave") return "onleave";
+                    return "present";
+                }
+
+                function toDateKey(dateValue) {
+                    const d = new Date(dateValue);
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, "0");
+                    const day = String(d.getDate()).padStart(2, "0");
+                    return `${y}-${m}-${day}`;
+                }
+
+                function buildMonthStatusData(rawEvents, monthDate) {
+                    const list = Array.isArray(rawEvents) ? rawEvents : [];
+                    const eventMap = {};
+                    const today = new Date();
+                    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+                    list.forEach(function (item) {
+                        const key = toDateKey(item.start || item.Start);
+                        eventMap[key] = item;
+                    });
+
+                    const year = monthDate.getFullYear();
+                    const month = monthDate.getMonth();
+                    const totalDays = new Date(year, month + 1, 0).getDate();
+                    const result = [];
+
+                    for (let day = 1; day <= totalDays; day++) {
+                        const date = new Date(year, month, day);
+                        const weekDay = date.getDay();
+
+                        if (weekDay === 0 || weekDay === 6) {
+                            continue;
+                        }
+
+                        // Show attendance only up to current date; keep future dates blank.
+                        if (date > todayOnly) {
+                            continue;
+                        }
+
+                        const key = toDateKey(date);
+                        const existing = eventMap[key];
+
+                        if (existing) {
+                            const startValue = existing.start || existing.Start || new Date(year, month, day, 9, 0);
+                            const endValue = existing.end || existing.End || new Date(year, month, day, 17, 0);
+                            result.push({
+                                id: existing.id || existing.Id || `${key}-present`,
+                                title: "Attendance",
+                                start: new Date(startValue),
+                                end: new Date(endValue),
+                                status: "Present",
+                                statusClass: "present",
+                                isAllDay: false
+                            });
+                        } else {
+                            result.push({
+                                id: `${key}-absent`,
+                                title: "Attendance",
+                                start: new Date(year, month, day, 9, 0),
+                                end: new Date(year, month, day, 17, 0),
+                                status: "Absent",
+                                statusClass: "absent",
+                                isAllDay: false
+                            });
+                        }
+                    }
+
+                    return result;
+                }
+
+                $("#attendanceScheduler").kendoScheduler({
+                    date: new Date(),
+                    height: 560,
+                    editable: false,
+                    views: [
+                        { type: "month", selected: true }
+                    ],
+                    dataSource: {
+                        transport: {
+                            read: function (options) {
+                                $.ajax({
+                                    url: "/Employee/GetAttendanceScheduler",
+                                    type: "GET",
+                                    dataType: "json",
+                                    success: function (res) {
+                                        const data = buildMonthStatusData(res, currentSchedulerDate);
+                                        options.success(data);
+                                    },
+                                    error: function () {
+                                        options.error();
+                                    }
+                                });
+                            }
+                        },
+                        schema: {
+                            model: {
+                                id: "id",
+                                fields: {
+                                    id: { from: "id" },
+                                    title: { from: "title" },
+                                    start: { from: "start", type: "date" },
+                                    end: { from: "end", type: "date" },
+                                    status: { from: "status" },
+                                    statusClass: { from: "statusClass" },
+                                    isAllDay: { from: "isAllDay", defaultValue: true }
+                                }
+                            }
+                        },
+                        error: function () {
+                            showDashboardError("Failed to load attendance scheduler.");
+                        }
+                    },
+                    navigate: function (e) {
+                        currentSchedulerDate = e.date;
+                        $("#attendanceScheduler").data("kendoScheduler").dataSource.read();
+                    },
+                    eventTemplate: `
+                        <div class="attendance-event #= statusClass || 'present' #">
+                            <span>#= status #</span>
+                        </div>
+                    `
+                });
+            }
+
+            function loadAttendanceSummaryFromController() {
+                $.ajax({
+                    url: "/Employee/GetAttendanceSummary",
+                    type: "GET",
+                    success: function (res) {
+                        if (!res || res.success === false) {
+                            showDashboardError(res?.message || "Failed to load attendance summary.");
+                            return;
+                        }
+
+                        const data = res.data || {};
+                        $("#presentCount").text(Number(data.presentCount ?? data.PresentCount ?? 0));
+                        $("#absentCount").text(Number(data.absentCount ?? data.AbsentCount ?? 0));
+                        $("#onLeaveCount").text(Number(data.onLeaveCount ?? data.OnLeaveCount ?? data.OnleaveCount ?? 0));
+                    },
+                    error: function (xhr) {
+                        showDashboardError(xhr?.responseJSON?.message || "Failed to load attendance summary.");
+                    }
+                });
+            }
+
             loadChartData("week");
             loadTaskSummary();
+            loadAttendanceSummaryFromController();
+            initAttendanceScheduler();
 
 
         });
