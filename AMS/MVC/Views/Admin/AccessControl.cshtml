@@ -1,0 +1,181 @@
+@{
+    ViewData["Title"] = "Access Control";
+    Layout = "~/Views/Shared/AdminLayout.cshtml";
+}
+
+<style>
+    #grid{
+        max-width:1350px;
+        margin-left:20px;
+    }
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 30px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        background-color: #d3d3d3;
+        border-radius: 34px;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        transition: 0.4s;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 4px;
+        bottom: 4px;
+        background: white;
+        border-radius: 50%;
+        transition: 0.4s;
+    }
+
+    input:checked+.slider {
+        background-color: #35c46a;
+    }
+
+    input:checked+.slider:before {
+        transform: translateX(28px);
+    }
+    .k-pager-numbers .k-state-selected,
+    .k-pager-numbers .k-selected{
+        background:#1ca7ec !important;
+        border-color:#1ca7ec !important;
+        color:white !important;
+    }
+
+    .k-pager-numbers a:hover{
+        background:#e0f2fe !important;
+        color:#1ca7ec !important;
+    }
+
+    .k-pager-nav{
+        color:#1ca7ec !important;
+    }
+
+    /* dropdown */
+
+    .k-dropdown .k-input{
+        color:#1ca7ec;
+    }
+
+    /* KENDO LINK COLOR FIX */
+
+    a.k-link{
+        color:#1ca7ec !important;
+    }
+
+    a.k-link:hover{
+        color:#0ea5e9 !important;
+    }
+
+    .k-state-selected > .k-link,
+    .k-selected > .k-link{
+        color:#1ca7ec !important;
+    }
+
+    /* pager links */
+
+    .k-pager-wrap a.k-link{
+        color:#1ca7ec !important;
+    }
+
+    .k-pager-wrap a.k-link:hover{
+        background:#e0f2fe !important;
+    }
+
+    /* grid header sorting */
+
+    .k-grid-header a.k-link{
+        color:#374151 !important;
+    }
+</style>
+
+<div id="grid"></div>
+@section Scripts{
+    <script>
+
+            function updateStatus(empId, checkbox) {
+                var status = checkbox.checked ? "Active" : "Inactive";
+                $.ajax({
+                    url: "/Admin/UpdateUserStatus",
+                    type: "PUT",
+                    data: {
+                        EmployeeId: empId,
+                        Status: status
+                    },
+                    success: function (res) {
+                        if (res.success) {
+                            console.log("Status Updated");
+                        }
+                        else {
+                            alert("Failed to update status");
+                        }
+                    },
+                    error: function () {
+                        alert("Server Error");
+                    }
+                });
+            }
+
+        $(document).ready(function () {
+            $("#grid").kendoGrid({
+                dataSource: {
+                    transport: {
+                        read: {
+                            url: "/Employee/GetAllUsers",
+                            dataType: "json"
+                        }
+                    },
+                    schema: {
+                        data: "data"
+                    },
+                    pageSize: 10,
+
+                },
+                sortable:true,
+                filterable: true,
+                height: 550,
+                pageable:{
+                    refresh:true,
+                    pageSizes:[5,10,20]
+                },
+                columns: [
+                    { field: "employeeId", title: "Employee ID", width: "120px" },
+                    { field: "name", title: "Name" },
+                    { field: "email", title: "Email" },
+                    {
+                        title: "Status",
+                        template: function(dataItem){
+
+                            var checked = dataItem.status === "Active" ? "checked" : "";
+
+                            return `
+                            <label class="switch">
+                                <input type="checkbox" ${checked}
+                                    onchange="updateStatus(${dataItem.employeeId}, this)">
+                                <span class="slider"></span>
+                            </label>`;
+                        },
+                        width: "150px"
+                    }
+                ]
+            });
+        });
+    </script>
+}
