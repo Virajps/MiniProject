@@ -165,7 +165,6 @@ namespace MyApp.Namespace
             try
             {
                 var result = await _employee.GetAllUsers();
-                System.Console.WriteLine("Employee data fetched");
                 return Ok(new { success = true, data = result });
             }
             catch (Exception ex)
