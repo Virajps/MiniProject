@@ -131,7 +131,7 @@
 <script>
     $(document).ready(function () {
 
-        $.get("/Employee/GetAllUsers", function (res) {
+        $.get("/Admin/AccessControlData", function (res) {
             if (res.success) {
                 res.data.forEach(emp => {
                     $("#employeeSelect").append(
