@@ -370,6 +370,40 @@ namespace MyApp.Namespace
                 return Ok(new { success = true, data = data ?? new List<vm_TaskSummary>() });
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAttendanceSummary()
+        {
+            int? empId = HttpContext.Session.GetInt32("EmployeeId");
+            if (empId == null || empId <= 0)
+            {
+                return Unauthorized(new { success = false, message = "Employee session not found." });
+            }
+
+            var data = await _repo.GetEmployeeAttendanceSummary(empId.Value);
+            return Ok(new { success = true, data = data ?? new vm_AttendenceSummary() });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAttendanceScheduler()
+        {
+            int? empId = HttpContext.Session.GetInt32("EmployeeId");
+            if (empId == null || empId <= 0)
+            {
+                return Unauthorized(new { success = false, message = "Employee session not found." });
+            }
+
+            var data = await _repo.GetAttendanceScheduler(empId.Value);
+
+            if (data != null)
+            {
+                return Json(data);
+            }
+            else
+            {
+                return BadRequest(new { success = false, message = "Failed to Load History" });
+            }
+        }
     }
 }
 
