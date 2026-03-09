@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Repositories.Interfaces;
+using Repositories.Models;
 
 namespace MyApp.Namespace
 {
@@ -25,45 +26,97 @@ namespace MyApp.Namespace
 
         public async Task<IActionResult> Dashboard()
         {
-            var data = _dashboardRepository.GetDashboardData();
-            return View(data);
+            var role = HttpContext.Session.GetString("Role");
+            if(role != "Admin")
+            {
+                return BadRequest("You Dont Access for this page");
+            }
+            else{
+                var data = _dashboardRepository.GetDashboardData();
+                return View(data);
+            }
         }
 
         [HttpGet]
         public async Task<IActionResult> History()
         {
-            return View();
+            var role = HttpContext.Session.GetString("Role");
+            if(role != "Admin")
+            {
+                return BadRequest("You Dont Access for this page");
+            }
+            else{
+                return View();
+            }
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAttendanceScheduler(int empId)
         {
-            var data = await _repo.GetAttendanceScheduler(empId);
-
-            return Json(data);
+            var role = HttpContext.Session.GetString("Role");
+            if(role != "Admin")
+            {
+                return BadRequest("You Dont Access for this page");
+            }
+            else
+            {
+                var data = await _repo.GetAttendanceScheduler(empId);
+                return Json(data);
+            }
         }
 
         [HttpPut]
         public async Task<IActionResult> UpdateUserStatus(int EmployeeId, string Status)
         {
-            System.Console.WriteLine(EmployeeId + "" + Status);
-            var result = await _employee.UpdateUserStatus(EmployeeId, Status);
-            System.Console.WriteLine(result);
-
-            if (result)
+            var role = HttpContext.Session.GetString("Role");
+            if(role != "Admin")
             {
-                return Ok(new { success = true, message = "Status updated successfully" });
+                return BadRequest("You Dont Access for this page");
             }
             else
             {
-                return BadRequest(new { success = false, message = "Failed to update status" });
+                System.Console.WriteLine(EmployeeId + "" + Status);
+                var result = await _employee.UpdateUserStatus(EmployeeId, Status);
+                System.Console.WriteLine(result);
+
+                if (result)
+                {
+                    return Ok(new { success = true, message = "Status updated successfully" });
+                }
+                else
+                {
+                    return BadRequest(new { success = false, message = "Failed to update status" });
+                }
             }
         }
 
         [HttpGet]
         public async Task<IActionResult> AccessControl()
         {
-            return View();
+            var role = HttpContext.Session.GetString("Role");
+            if(role != "Admin")
+            {
+                return BadRequest("You Dont Access for this page");
+            }
+            else
+            {
+                return View();
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> AccessControlData()
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if(role != "Admin")
+            {
+                return BadRequest("You Dont Access for this page");
+            }
+            else
+            {   
+                var result = await _dashboardRepository.GetAllUsersForAccess();
+                return Ok(new { success = true, data = result });
+            }
         }
     }
 }

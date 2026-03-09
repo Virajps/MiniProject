@@ -82,6 +82,12 @@
                 const $alert = $("#profileAlert");
                 $alert.removeClass("d-none alert-success alert-danger alert-warning");
                 $alert.addClass(`alert-${type}`).text(message);
+
+                if (type === "success") {
+                    setTimeout(function () {
+                        $alert.addClass("d-none").text("");
+                    }, 1000);
+                }
             }
 
             $("#empName").kendoTextBox({
