@@ -128,7 +128,6 @@ namespace MyApp.Namespace
             try
             {
                 var result = await _employee.GetAllUsers();
-                System.Console.WriteLine("Employee data fetched");
                 return Ok(new { success = true, data = result });
             }
             catch (Exception ex)
@@ -141,7 +140,7 @@ namespace MyApp.Namespace
             return View();
         }
         [HttpPut]
-        public async Task<IActionResult> UpdateUser(int EmployeeId, t_Employee employee)
+        public async Task<IActionResult> UpdateUser(int EmployeeId,[FromForm] t_Employee employee)
         {
             if (employee.ImageFile != null && employee.ImageFile.Length > 0)
             {

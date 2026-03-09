@@ -54,6 +54,7 @@
                         <label for="empGender" class="form-label">Gender</label>
                         <input id="empGender" name="Gender" />
                     </div>
+                    <input type="hidden" id="currentImageName" name="Image" />
 
                     <div class="col-12 mt-2">
                         <button id="updateProfileBtn" type="submit">Update Profile</button>
@@ -146,6 +147,7 @@
                 $("#currentImagePreview").attr("src", currentImage);
                 $("#newPreviewContainer").addClass("d-none");
                 $("#newImagePreview").attr("src", defaultImage);
+                 $("#currentImageName").val(data.image || "");
             }
 
             if (!empId) {
@@ -168,7 +170,7 @@
                 }
             });
 
-            $("#updateUserForm").on("submit", function (e) {
+            $("#updateProfileBtn").on("click", function (e) {
                 e.preventDefault();
 
                 const name = $("#empName").data("kendoTextBox").value().trim();
@@ -184,11 +186,14 @@
                 formData.append("Name", name);
                 formData.append("Email", email);
                 formData.append("Gender", gender);
+                formData.append("Image", $("#currentImageName").val());
 
                 if (selectedFile) {
-                    formData.append("ImageFile", selectedFile.rawFile);
+                    formData.append("ImageFile", selectedFile);
                 }
-
+               for (let pair of formData.entries()) {
+    console.log(pair[0] + ": " + pair[1]);
+}
                 $.ajax({
                     url: `/Employee/UpdateUser?EmployeeId=${empId}`,
                     type: "PUT",

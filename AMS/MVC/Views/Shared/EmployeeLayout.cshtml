@@ -7,6 +7,8 @@
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/lib/kendo/kendo.default-v2.min.css" />
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css' />
+
 
     <style>
         :root {
@@ -156,13 +158,13 @@
             <ul id="employeeSidebarPanelBar" class="mb-0">
                 <li class="@(currentController == "Employee" && currentAction == "Dashboard" ? "k-selected" : "")">
                     <a href="@Url.Action("Dashboard", "Employee")">
-                        <span class="k-icon k-i-dashboard me-2"></span>
+                        <span class="fi fi-rr-dashboard me-2"></span>
                         Dashboard
                     </a>
                 </li>
                 <li class="@(currentController == "Employee" && currentAction == "UpdateUser" ? "k-selected" : "")">
                     <a href="@Url.Action("UpdateUser", "Employee")">
-                        <span class="k-icon k-i-user me-2"></span>
+                        <span class="fi fi-rr-edit me-2"></span>
                         Profile
                     </a>
                 </li>
