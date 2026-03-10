@@ -4,6 +4,11 @@
 }
 
 <style>
+    .dashboard{
+        max-width: 1350px;
+        margin-left: 30px;
+    }
+
     .all-years-modal {
         position: fixed;
         inset: 0;
@@ -59,7 +64,7 @@
 
     .attendance-summary-stats {
         display: grid;
-        grid-template-columns: repeat(3, minmax(120px, 1fr));
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
         gap: 12px;
         margin-bottom: 14px;
     }
@@ -98,10 +103,6 @@
         background: #F44336;
     }
 
-    .attendance-badge.onleave {
-        background: #f59e0b;
-        color: #111827;
-    }
 
     #attendanceScheduler {
         border-radius: 8px;
@@ -128,10 +129,6 @@
         background: #F44336;
     }
 
-    .attendance-event.onleave {
-        background: #f59e0b;
-        color: #111827;
-    }
 </style>
 
 
@@ -162,6 +159,16 @@
             <div id="avgHours" class="card-value">0</div>
         </div>
 
+        <div class="card latein">
+            <div class="card-title">Late In</div>
+            <div id="latein" class="card-value">0</div>
+        </div>
+
+        <div class="card earlyout">
+            <div class="card-title">Early Out</div>
+            <div id="earlyout" class="card-value">0</div>
+        </div>
+
     </div>
 
     <div class="chartCard">
@@ -184,15 +191,10 @@
                 <div class="attendance-stat-label">Absent</div>
                 <div id="absentCount" class="attendance-stat-value">0</div>
             </div>
-            <div class="attendance-stat-item">
-                <div class="attendance-stat-label">On Leave</div>
-                <div id="onLeaveCount" class="attendance-stat-value">0</div>
-            </div>
         </div>
         <div class="attendance-legend">
             <span class="attendance-badge present">Present</span>
             <span class="attendance-badge absent">Absent</span>
-            <span class="attendance-badge onleave">On Leave</span>
         </div>
         <div id="attendanceScheduler"></div>
     </div>
@@ -227,6 +229,9 @@
                 series:[{
                     type:"column",
                     field:"hours",
+                    overlay: {
+                        gradient: "none"
+                    },
                     categoryField:"period",
                     name:"Hours",
                     color:"#4f6bed"
@@ -263,6 +268,9 @@
                 series: [{
                     type: "pie",
                     field: "value",
+                    overlay: {
+                        gradient: "none"
+                    },
                     categoryField: "category",
                     colorField: "color",
                     data: [
@@ -407,14 +415,6 @@
             function initAttendanceScheduler() {
                 let currentSchedulerDate = new Date();
 
-                function getStatusClass(status) {
-                    const normalized = (status || "").toString().trim().toLowerCase();
-                    if (normalized === "present") return "present";
-                    if (normalized === "absent") return "absent";
-                    if (normalized === "on leave" || normalized === "onleave") return "onleave";
-                    return "present";
-                }
-
                 function toDateKey(dateValue) {
                     const d = new Date(dateValue);
                     const y = d.getFullYear();
@@ -424,15 +424,30 @@
                 }
 
                 function buildMonthStatusData(rawEvents, monthDate) {
+                    const minDate = new Date(Math.min(...rawEvents.map(e => new Date(e.start))));
                     const list = Array.isArray(rawEvents) ? rawEvents : [];
                     const eventMap = {};
                     const today = new Date();
                     const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    const firstDate = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
 
+                    let workingDays = 0;
+                    let current = new Date(firstDate);
+                    
+                    while (current <= todayOnly) {
+                        const day = current.getDay(); 
+                        if (day !== 0 && day !== 6) {
+                            workingDays++;
+                        }   
+                        current.setDate(current.getDate() + 1);
+                    }
+                    const absent = workingDays - rawEvents.length
                     list.forEach(function (item) {
                         const key = toDateKey(item.start || item.Start);
                         eventMap[key] = item;
                     });
+                    $("#presentCount").text(rawEvents.length);
+                    $("#absentCount").text(absent);
 
                     const year = monthDate.getFullYear();
                     const month = monthDate.getMonth();
@@ -452,6 +467,9 @@
                             continue;
                         }
 
+                        if (firstDate > date) {
+                            continue;
+                        }
                         const key = toDateKey(date);
                         const existing = eventMap[key];
 
@@ -498,6 +516,7 @@
                                     type: "GET",
                                     dataType: "json",
                                     success: function (res) {
+                                        
                                         const data = buildMonthStatusData(res, currentSchedulerDate);
                                         options.success(data);
                                     },
@@ -542,15 +561,15 @@
                     url: "/Employee/GetAttendanceSummary",
                     type: "GET",
                     success: function (res) {
+                        console.log(res)
+                            $("#earlyout").html(res.data['earlyOutCount'])
+                            $("#latein").html(res.data['lateInCount'])
                         if (!res || res.success === false) {
+                            
                             showDashboardError(res?.message || "Failed to load attendance summary.");
                             return;
                         }
 
-                        const data = res.data || {};
-                        $("#presentCount").text(Number(data.presentCount ?? data.PresentCount ?? 0));
-                        $("#absentCount").text(Number(data.absentCount ?? data.AbsentCount ?? 0));
-                        $("#onLeaveCount").text(Number(data.onLeaveCount ?? data.OnLeaveCount ?? data.OnleaveCount ?? 0));
                     },
                     error: function (xhr) {
                         showDashboardError(xhr?.responseJSON?.message || "Failed to load attendance summary.");
