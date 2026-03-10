@@ -252,6 +252,18 @@
                         </div>
                     </a>
                 </li>
+                <li class="@(currentController == "Admin" && currentAction == "ProgressReport" ? "k-selected" : "")">
+                    <a href="@Url.Action("ProgressReport", "Admin")">
+                        <div class="row">
+                            <div class="col-2">
+                                <i class="fi fi-rr-newspaper" style="margin-right: 8%;font-size:18px"></i>
+                            </div>
+                            <div class="col" style="align-items: center;">
+                                Progress Report
+                            </div>
+                        </div>
+                    </a>
+                </li>
             </ul>
         </aside>
 

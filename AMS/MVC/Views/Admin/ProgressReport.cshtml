@@ -1,0 +1,331 @@
+@{
+    ViewData["Title"] = "Employee Progress Report";
+    Layout = "~/Views/Shared/AdminLayout.cshtml";
+}
+
+<style>
+.report-container {
+    max-width: 1300px;
+    margin: auto;
+}
+
+.filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+#profileCard {
+    background: #1c7ed6;
+    color: white;
+    padding: 18px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.chart-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+#attendanceChart,
+#taskChart {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+#exportArea{
+    background:white;
+    padding:20px;
+}
+
+#summaryGrid,
+#taskGrid {
+    margin-top: 20px;
+}
+
+.k-grid-toolbar {
+    background: #1c7ed6;
+    color: white;
+}
+
+#exportArea{
+    background:white;
+    padding:20px;
+}
+
+.chart-row{
+    page-break-inside: avoid;
+}
+
+a.k-link{
+        color:#1ca7ec !important;
+    }
+
+    a.k-link:hover{
+        color:#0ea5e9 !important;
+    }
+
+    .k-state-selected > .k-link,
+    .k-selected > .k-link{
+        color:#1ca7ec !important;
+    }
+
+@@media (max-width: 900px) {
+    .chart-row {
+        grid-template-columns: 1fr;
+    }
+
+    #profileCard {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+</style>
+
+<div class="report-container">
+
+    <div class="filters">
+        <input id="employee" />
+        <input id="month" />
+        <input id="year" />
+
+        <button id="generateReport" style="background-color: #0ea5e9;border: #0ea5e9;">Generate</button>
+        <button id="exportReport" style="background-color: #0ea5e9;border: #0ea5e9;">Export PDF</button>
+    </div>
+
+    <!-- Export Area -->
+    <div id="exportArea">
+
+        <div id="profileCard"></div>
+
+        <div class="chart-row">
+            <div id="attendanceChart"></div>
+            <div id="taskChart"></div>
+        </div>
+
+        <div id="summaryGrid"></div>
+        <div id="taskGrid"></div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+
+<script>
+
+$(document).ready(function () {
+
+
+
+    function renderProfile(data) {
+
+        $("#profileCard").html(`
+            <div>
+                <h3>${data.employeeName}</h3>
+                <span>Employee ID : ${data.employeeId}</span>
+            </div>
+
+            <div>
+                <b>Total Working Hours :</b> ${data.totalWorkingHours}
+            </div>
+        `);
+
+    }
+
+
+
+    function renderCharts(data) {
+
+        $("#attendanceChart").kendoChart({
+
+            title: { text: "Attendance Overview" },
+
+            chartArea: {
+                height: 400
+            },
+            seriesColors: ["#166f99", "#2185b4","#B0DFE5", "#319fd2", "#3eaee2", "#89CFF0"],
+            series: [{
+                type: "column",
+                overlay:{
+                gradient:"none"
+                },
+                data: [
+                    data.present,
+                    data.lateIn,
+                    data.earlyOut,
+                    data.absent
+                ]
+            }],
+
+            categoryAxis: {
+                categories: ["Present", "Late", "EarlyOut", "Absent"]
+            }
+
+        });
+
+        const taskData = data.tasks.map(t => ({
+            category: t.taskType,
+            value: t.hours
+        }));
+
+        $("#taskChart").kendoChart({
+
+            title: { text: "Task Distribution" },
+            seriesColors: ["#166f99", "#2185b4","#B0DFE5", "#319fd2", "#3eaee2", "#89CFF0"],
+            seriesDefaults: {
+                type: "donut",
+                startAngle: 300
+            },
+            series: [{
+                data: taskData,
+                overlay:{
+                gradient:"none"
+                },
+            }]
+
+        });
+
+    }
+
+
+
+    function renderGrids(data) {
+
+        $("#summaryGrid").kendoGrid({
+
+            dataSource: [data],
+
+            columns: [
+                { field: "present", title: "Present" },
+                { field: "lateIn", title: "Late" },
+                { field: "earlyOut", title: "Early Out" },
+                { field: "absent", title: "Absent" },
+                { field: "totalWorkingHours", title: "Working Hours" }
+            ]
+
+        });
+
+        $("#taskGrid").kendoGrid({
+
+            dataSource: data.tasks,
+
+            columns: [
+                { field: "taskType", title: "Task" },
+                { field: "hours", title: "Hours" }
+            ]
+
+        });
+
+    }
+
+
+
+    $("#employee").kendoDropDownList({
+        optionLabel: "Select Employee",
+        dataTextField: "name",
+        dataValueField: "employeeId",
+        dataSource: {
+            transport: {
+                read: {
+                    url: "/Admin/AccessControlData",
+                    dataType: "json"
+                }
+            },
+            schema: {
+                data: "data"
+            }
+        }
+    });
+
+    $("#month").kendoDropDownList({
+        dataSource: [
+            { text: "January", value: 1 },
+            { text: "February", value: 2 },
+            { text: "March", value: 3 },
+            { text: "April", value: 4 },
+            { text: "May", value: 5 },
+            { text: "June", value: 6 },
+            { text: "July", value: 7 },
+            { text: "August", value: 8 },
+            { text: "September", value: 9 },
+            { text: "October", value: 10 },
+            { text: "November", value: 11 },
+            { text: "December", value: 12 }
+        ],
+        dataTextField: "text",
+        dataValueField: "value"
+    });
+
+    $("#year").kendoDropDownList({
+        dataSource: [2024, 2025, 2026]
+    });
+
+
+
+    $("#generateReport").kendoButton({
+
+        themeColor: "primary",
+
+        click: function () {
+
+            const emp = $("#employee").data("kendoDropDownList").value();
+            const month = $("#month").data("kendoDropDownList").value();
+            const year = $("#year").data("kendoDropDownList").value();
+
+            $.get("/Admin/GetEmployeeProgress",
+                { empId: emp, month: month, year: year },
+
+                function (data) {
+
+                    renderProfile(data);
+                    renderCharts(data);
+                    renderGrids(data);
+
+                }
+            );
+
+        }
+
+    });
+
+
+
+    $("#exportReport").kendoButton({
+        themeColor: "primary",
+
+        click: function () {
+
+            const emp = $("#employee").data("kendoDropDownList").value();
+            const month = $("#month").data("kendoDropDownList").value();
+            const year = $("#year").data("kendoDropDownList").value();
+
+            const fileName = emp + "_" + month + "_" + year + "_progress_report.pdf";
+
+            kendo.drawing.drawDOM($("#exportArea"), {
+                paperSize: "A4",
+                margin: "1cm",
+                scale: 0.6,              
+                landscape: true,         
+                forcePageBreak: ".page-break"
+            }).then(function (group) {
+                kendo.drawing.pdf.saveAs(group, fileName);
+            });
+
+        }
+    });
+
+});
+
+</script>
+
+}

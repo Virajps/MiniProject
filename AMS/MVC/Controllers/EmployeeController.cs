@@ -7,6 +7,7 @@ using Repositories.Models;
 
 namespace MyApp.Namespace
 {
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     public class EmployeeController : Controller
     {
         private readonly IAttendenceInterface _repo;
@@ -29,7 +30,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else{
                 return View();
@@ -41,7 +42,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {
@@ -69,7 +70,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else{
                 int? empId = HttpContext.Session.GetInt32("EmployeeId");
@@ -95,7 +96,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {
@@ -109,7 +110,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {
@@ -165,7 +166,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {
@@ -192,7 +193,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {
@@ -217,7 +218,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {
@@ -237,7 +238,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else{
                 return View();
@@ -249,7 +250,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {
@@ -290,7 +291,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {
@@ -329,7 +330,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {
@@ -356,7 +357,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {

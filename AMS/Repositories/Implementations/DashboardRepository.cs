@@ -17,21 +17,21 @@ namespace Repositories.Implementations
 
             _conn.Open();
 
-            // 1️⃣ Total Employees
+            //  Total Employees
             using (var cmd = new NpgsqlCommand(
                 "SELECT COUNT(*) FROM t_employee WHERE c_role='Employee'", _conn))
             {
                 model.TotalEmployees = Convert.ToInt32(cmd.ExecuteScalar());
             }
 
-            // 2️⃣ Active Employees
+            //  Active Employees
             using (var cmd = new NpgsqlCommand(
                 "SELECT COUNT(*) FROM t_employee WHERE c_status='Active'", _conn))
             {
                 model.ActiveEmployees = Convert.ToInt32(cmd.ExecuteScalar());
             }
 
-            // 3️⃣ Present Today
+            //  Present Today
             using (var cmd = new NpgsqlCommand(@"
         SELECT COUNT(*) 
         FROM t_attendance JOIN t_employee ON t_attendance.c_empid = t_employee.c_empid
@@ -40,7 +40,7 @@ namespace Repositories.Implementations
                 model.PresentToday = Convert.ToInt32(cmd.ExecuteScalar());
             }
 
-            // 4️⃣ Absent Today
+            //  Absent Today
             using (var cmd = new NpgsqlCommand(@"
         SELECT COUNT(*) 
         FROM t_employee 
@@ -54,7 +54,7 @@ namespace Repositories.Implementations
                 model.AbsentToday = Convert.ToInt32(cmd.ExecuteScalar());
             }
 
-            // 5️⃣ Late Today
+            //  Late Today
             using (var cmd = new NpgsqlCommand(@"
         SELECT COUNT(*) 
         FROM t_attendance 
@@ -64,7 +64,7 @@ namespace Repositories.Implementations
                 model.LateToday = Convert.ToInt32(cmd.ExecuteScalar());
             }
 
-            // 6️⃣ Task Working Hours (Pie Chart)
+            //  Task Working Hours (Pie Chart)
             using (var cmd = new NpgsqlCommand(@"
                 SELECT 
                     task,
@@ -77,22 +77,22 @@ namespace Repositories.Implementations
                     WHERE c_tasktype IS NOT NULL
                 ) t
                 GROUP BY task", _conn))
+            {
+                var reader = cmd.ExecuteReader();
+
+                while (reader.Read())
                 {
-                    var reader = cmd.ExecuteReader();
-
-                    while (reader.Read())
+                    model.TaskHours.Add(new TaskChartModel
                     {
-                        model.TaskHours.Add(new TaskChartModel
-                        {
-                            Task = reader["task"].ToString(),
-                            Hours = Convert.ToInt32(reader["hours"])
-                        });
-                    }
-
-                    reader.Close();
+                        Task = reader["task"].ToString(),
+                        Hours = Convert.ToInt32(reader["hours"])
+                    });
                 }
 
-            // 7️⃣ Recent Attendance
+                reader.Close();
+            }
+
+            //  Recent Attendance
             using (var cmd = new NpgsqlCommand(@"
         SELECT 
             e.c_name,
@@ -170,6 +170,81 @@ namespace Repositories.Implementations
                 await _conn.CloseAsync();
             }
             return employees;
+        }
+
+        public async Task<vm_EmployeeProgressReport> GetEmployeeProgress(int empId, int month, int year)
+        {
+            var report = new vm_EmployeeProgressReport();
+            report.EmployeeId = empId;
+
+            try
+            {
+                await _conn.OpenAsync();
+
+                using var cmd = new NpgsqlCommand(@"
+        SELECT
+            e.c_name,
+            COUNT(*) FILTER (WHERE a.c_attendstatus='Regular') as present,
+            COUNT(*) FILTER (WHERE a.c_attendstatus='LateIn') as late,
+            COUNT(*) FILTER (WHERE a.c_attendstatus='EarlyOut') as early,
+            COUNT(*) FILTER (WHERE a.c_attendstatus='Absent') as absent,
+            SUM(a.c_workinghour) as hours
+        FROM t_attendance a
+        JOIN t_employee e ON e.c_empid = a.c_empid
+        WHERE a.c_empid=@emp
+        AND EXTRACT(MONTH FROM a.c_attenddate)=@month
+        AND EXTRACT(YEAR FROM a.c_attenddate)=@year
+        GROUP BY e.c_name
+        ", _conn);
+
+                cmd.Parameters.AddWithValue("@emp", empId);
+                cmd.Parameters.AddWithValue("@month", month);
+                cmd.Parameters.AddWithValue("@year", year);
+
+                using var r = await cmd.ExecuteReaderAsync();
+
+                if (await r.ReadAsync())
+                {
+                    report.EmployeeName = r["c_name"].ToString();
+                    report.Present = Convert.ToInt32(r["present"]);
+                    report.LateIn = Convert.ToInt32(r["late"]);
+                    report.EarlyOut = Convert.ToInt32(r["early"]);
+                    report.Absent = Convert.ToInt32(r["absent"]);
+                    report.TotalWorkingHours = r["hours"] == DBNull.Value ? 0 : Convert.ToInt32(r["hours"]);
+                }
+
+                await r.CloseAsync();
+
+                using var cmd2 = new NpgsqlCommand(@"
+        SELECT c_tasktype, SUM(c_workinghour) as hours
+        FROM t_attendance
+        WHERE c_empid=@emp
+        AND EXTRACT(MONTH FROM c_attenddate)=@month
+        AND EXTRACT(YEAR FROM c_attenddate)=@year
+        GROUP BY c_tasktype
+        ", _conn);
+
+                cmd2.Parameters.AddWithValue("@emp", empId);
+                cmd2.Parameters.AddWithValue("@month", month);
+                cmd2.Parameters.AddWithValue("@year", year);
+
+                using var r2 = await cmd2.ExecuteReaderAsync();
+
+                while (await r2.ReadAsync())
+                {
+                    report.Tasks.Add(new TaskSummary
+                    {
+                        TaskType = r2["c_tasktype"].ToString(),
+                        Hours = Convert.ToInt32(r2["hours"])
+                    });
+                }
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
+
+            return report;
         }
     }
 }
