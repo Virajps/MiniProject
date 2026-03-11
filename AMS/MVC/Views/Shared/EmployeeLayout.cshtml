@@ -12,7 +12,7 @@
 
     <style>
         :root {
-            --sidebar-width: 250px;
+            --sidebar-width: 250px !important;
             --topbar-height: 64px;
         }
 
@@ -46,7 +46,8 @@
             border-radius: 0.5rem;
             margin: 0.2rem 0;
             font-weight: 600;
-            color: #1f2937;
+            color: #0b6e99;
+            margin-bottom: 10px;
         }
 
         #employeeSidebarPanelBar .k-selected > .k-link,
@@ -308,6 +309,16 @@
             border-radius: 10px;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
         }
+        .k-button-solid-primary,.k-button-solid-primary:hover {
+            border-color: #4f6bed;
+            background-color: #4f6bed;
+        }
+        .k-menu-link, .k-menu-link:hover {
+            color: #4f6bed;
+        }
+        .k-button-solid-base{
+            background: #e0f2fe;
+        }
     </style>
 </head>
 <body class="text-dark">
@@ -327,7 +338,6 @@
         <aside class="employee-sidebar position-sticky bg-white border-end p-3 d-flex flex-column gap-3">
             <div class="pb-2 border-bottom">
                 <h1 class="h5 mb-1 fw-bold">AMS Employee</h1>
-                <p class="mb-0 text-muted small">Attendance & profile workspace</p>
             </div>
 
             <ul id="employeeSidebarPanelBar" class="mb-0">

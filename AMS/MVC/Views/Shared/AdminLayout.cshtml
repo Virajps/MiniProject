@@ -125,11 +125,9 @@
 
         #profileMenu .k-link:hover {
             color: #0ea5e9 !important;
-            background: #f0f9ff !important;
         }
 
         #profileMenu .k-item:hover > .k-link {
-            background: #e0f2fe !important;
             color: #1ca7ec !important;
         }
 
@@ -214,7 +212,6 @@
         <aside class="admin-sidebar position-sticky bg-white border-end p-3 d-flex flex-column gap-3">
             <div class="pb-2 border-bottom">
                 <h1 class="h5 mb-1 fw-bold">AMS Admin</h1>
-                <p class="mb-0 text-muted small">Attendance & profile workspace</p>
             </div>
 
             <ul id="adminSidebarPanelBar" class="mb-0" style="align-items: center;">
@@ -250,6 +247,18 @@
                             </div>
                             <div class="col" style="align-items: center;">
                                 Employee Access
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                <li class="@(currentController == "Admin" && currentAction == "ProgressReport" ? "k-selected" : "")">
+                    <a href="@Url.Action("ProgressReport", "Admin")">
+                        <div class="row">
+                            <div class="col-2">
+                                <i class="fi fi-rr-newspaper" style="margin-right: 8%;font-size:18px"></i>
+                            </div>
+                            <div class="col" style="align-items: center;">
+                                Progress Report
                             </div>
                         </div>
                     </a>
