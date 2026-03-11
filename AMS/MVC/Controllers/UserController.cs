@@ -5,6 +5,7 @@ using Repositories.Models;
 
 namespace MyApp.Namespace
 {
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     public class UserController : Controller
     {
         private readonly IWebHostEnvironment _env;
@@ -33,7 +34,10 @@ namespace MyApp.Namespace
             return View();
         }
 
-        
+        public ActionResult Unauthorized()
+        {
+            return View();
+        }
 
         [HttpPost]
         public async Task<IActionResult> Login(vm_login login)
