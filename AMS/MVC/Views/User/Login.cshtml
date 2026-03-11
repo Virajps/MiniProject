@@ -1,0 +1,183 @@
+@{
+    ViewData["Title"] = "Login";
+}
+<div class="card shadow-lg">
+
+<div class="card-body">
+
+<h4 class="form-title">Login</h4>
+
+
+<form id="login"></form>
+<div class="text-center mt-3">
+    <span class="text-muted">Don't have an account?</span>
+    <a asp-action="Register" asp-controller="User" class="redirect fw-bold text-decoration-none">
+        Register
+    </a>
+</div>
+</div>
+</div>
+
+
+@section Scripts{
+<style>
+    .password-toggle-btn {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        padding: 2px;
+        color: #6b7280;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+    }
+
+    .password-toggle-btn:hover {
+        color: #111827;
+    }
+
+    .password-toggle-btn svg {
+        width: 18px;
+        height: 18px;
+        display: block;
+    }
+
+    .password-with-toggle {
+        position: relative;
+    }
+
+    .password-with-toggle input {
+        padding-right: 38px !important;
+    }
+</style>
+<script>
+    function getEyeIconMarkup(isVisible) {
+        if (isVisible) {
+            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c5.2 0 9.3 3.3 10.8 8-0.5 1.5-1.3 2.9-2.4 4"></path><path d="M6.2 6.2C4.6 7.6 3.4 9.6 2.8 12c1.5 4.7 5.6 8 10.8 8 1.6 0 3.1-.3 4.4-.9"></path></svg>';
+        }
+
+        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+    }
+
+    function attachPasswordToggle(inputSelector) {
+        const $input = $(inputSelector).first();
+        if (!$input.length || $input.data("hasPasswordToggle")) {
+            return;
+        }
+
+        const $host = $input.closest(".k-input").length ? $input.closest(".k-input") : $input;
+        $host.addClass("password-with-toggle");
+
+        const $toggleBtn = $('<button type="button" class="password-toggle-btn" aria-label="Show password"></button>');
+        $toggleBtn.html(getEyeIconMarkup(false));
+
+        $toggleBtn.on("click", function () {
+            const isPassword = $input.attr("type") === "password";
+            const isVisible = isPassword;
+            $input.attr("type", isVisible ? "text" : "password");
+            $toggleBtn.html(getEyeIconMarkup(isVisible));
+            $toggleBtn.attr("aria-label", isVisible ? "Hide password" : "Show password");
+        });
+
+        $host.append($toggleBtn);
+        $input.data("hasPasswordToggle", true);
+    }
+
+    $("#login").kendoForm({
+        formData:{
+            email:"",
+            password:""
+        },
+        validatable:{
+            validateOnBlur:true,
+            validationSummary:false,
+            errorTemplate:"<span class='k-form-error'>#:message#</span>"
+        },
+        items:[
+
+            {
+                field:"email",
+                label:"Email",
+                editor:"TextBox",
+                validation:{
+                    required:{message:"Email address is required."},
+                    email: { message: "Please enter a valid email address." }
+                },
+                editorOptions:{
+                    placeholder:"Enter your email address"
+                }
+            },
+
+                {
+                field:"password",
+                label:"Password",
+                editor:"TextBox",
+                validation:{
+                    required:{message:"password is Required"},
+                },
+                attributes:{
+                    type:"password",
+                    placeholder:"Enter your password"
+                }
+            }
+        ],
+        buttonsTemplate:
+            '<button class="btn btn-primary submit-btn mt-3">Login</button>',
+
+        submit:function(e){
+
+            e.preventDefault();
+
+            const formdata = new FormData();
+            formdata.append("UserEmail", e.model.email);
+            formdata.append("UserPassword", e.model.password);
+
+
+            $.ajax({
+
+                url:"/User/Login",
+                type:"POST",
+                data:formdata,
+                contentType:false,
+                processData:false,
+
+                success:function(res){
+                    console.log(res)
+                    if(res.success){
+                        Swal.fire({
+                            title: "Success!",
+                            text: res.message,
+                            icon: "success"
+                        }).then(() => {
+
+                                if(res.role === "Admin"){
+                                    window.location.href = "/Admin/Dashboard";
+                                }
+                                else{
+                                    window.location.href = "/Employee/Dashboard";
+                                }
+
+                            });
+                    }else{
+                        Swal.fire({
+                            title: "Oops!",
+                            text: res.message,
+                            icon: "error"
+                        });
+                    }
+                }
+
+            });
+
+        }
+    });
+
+    attachPasswordToggle("input[name='password']");
+
+</script>
+}

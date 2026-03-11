@@ -1,0 +1,229 @@
+@{
+    ViewData["Title"] = "Update Profile";
+    Layout = "~/Views/Shared/EmployeeLayout.cshtml";
+    var employeeId = Context.Session.GetInt32("EmployeeId") ?? 0;
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+            <h4 class="mb-0">Update Profile</h4>
+            <a id="changePasswordBtn" href="/Employee/ChangePassword">Change Password</a>
+        </div>
+
+        <div id="profileAlert" class="alert d-none" role="alert"></div>
+
+        <form id="updateUserForm" class="row g-4" novalidate>
+            <input type="hidden" id="employeeId" value="@employeeId" />
+
+            <div class="col-lg-4">
+                <div class="card h-100 border">
+                    <div class="card-body">
+                        <h6 class="mb-3">Profile Image</h6>
+
+                        <div class="text-center">
+                            <p class="small text-muted mb-2">Current (click to change)</p>
+                            <img id="currentImagePreview" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Current Image" class="img-fluid rounded-circle border" style="width: 130px; height: 130px; object-fit: cover; cursor: pointer;" />
+                        </div>
+
+                        <div id="newPreviewContainer" class="text-center mt-3 d-none">
+                            <p class="small text-muted mb-2">New Preview</p>
+                            <img id="newImagePreview" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="New Image Preview" class="img-fluid rounded-circle border" style="width: 130px; height: 130px; object-fit: cover;" />
+                        </div>
+
+                        <div class="mt-3 d-none">
+                            <input id="profileUpload" name="ImageFile" type="file" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="empName" class="form-label">Full Name</label>
+                        <input id="empName" name="Name" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="empEmail" class="form-label">Email</label>
+                        <input id="empEmail" name="Email" readonly />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="empGender" class="form-label">Gender</label>
+                        <input id="empGender" name="Gender" />
+                    </div>
+                    <input type="hidden" id="currentImageName" name="Image" />
+
+                    <div class="col-12 mt-2">
+                        <button id="updateProfileBtn" type="submit">Update Profile</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            const empId = Number($("#employeeId").val() || 0);
+            let selectedFile = null;
+            const genderOptions = [
+                { text: "Male", value: "Male" },
+                { text: "Female", value: "Female" },
+                { text: "Other", value: "Other" }
+            ];
+
+            const defaultImage = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+
+            function showAlert(type, message) {
+                const $alert = $("#profileAlert");
+                $alert.removeClass("d-none alert-success alert-danger alert-warning");
+                $alert.addClass(`alert-${type}`).text(message);
+
+                if (type === "success") {
+                    setTimeout(function () {
+                        $alert.addClass("d-none").text("");
+                    }, 1000);
+                }
+            }
+
+            $("#empName").kendoTextBox({
+                placeholder: "Enter your full name"
+            });
+
+            $("#empEmail").kendoTextBox();
+
+            $("#empGender").kendoDropDownList({
+                dataTextField: "text",
+                dataValueField: "value",
+                dataSource: genderOptions,
+                optionLabel: "Select gender"
+            });
+
+            $("#profileUpload").kendoUpload({
+                async: {
+                    autoUpload: false
+                },
+                multiple: false,
+                showFileList: false,
+                select: function (e) {
+                    const file = e.files[0]?.rawFile;
+                    selectedFile = file || null;
+
+                    if (!file) {
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        $("#newPreviewContainer").removeClass("d-none");
+                        $("#newImagePreview").attr("src", event.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            const uploadWidget = $("#profileUpload").data("kendoUpload");
+            uploadWidget.wrapper.addClass("d-none");
+
+            $("#currentImagePreview").on("click", function () {
+                uploadWidget.wrapper.find("input[type='file']").trigger("click");
+            });
+
+            $("#updateProfileBtn").kendoButton({
+                themeColor: "primary",
+                icon: "save"
+            });
+
+            $("#changePasswordBtn").kendoButton({
+                icon: "lock"
+            });
+
+            function bindUserData(data) {
+                $("#empName").data("kendoTextBox").value(data.name || "");
+                $("#empEmail").data("kendoTextBox").value(data.email || "");
+                const rawGender = (data.gender || data.Gender || "").toString().trim().toLowerCase();
+                const matchedGender = genderOptions.find(x => x.value.toLowerCase() === rawGender);
+                $("#empGender").data("kendoDropDownList").value(matchedGender ? matchedGender.value : "");
+
+                const currentImage = data.image ? `/profile_images/${data.image}` : defaultImage;
+                $("#currentImagePreview").attr("src", currentImage);
+                $("#newPreviewContainer").addClass("d-none");
+                $("#newImagePreview").attr("src", defaultImage);
+                 $("#currentImageName").val(data.image || "");
+            }
+
+            if (!empId) {
+                showAlert("warning", "Employee session not found. Please login again.");
+                return;
+            }
+
+            $.ajax({
+                url: `/Employee/GetUserById?EmployeeId=${empId}`,
+                type: "GET",
+                success: function (res) {
+                    if (res.success && res.data) {
+                        bindUserData(res.data);
+                    } else {
+                        showAlert("danger", res.message || "Unable to load user information.");
+                    }
+                },
+                error: function () {
+                    showAlert("danger", "Failed to load user information.");
+                }
+            });
+
+            $("#updateProfileBtn").on("click", function (e) {
+                e.preventDefault();
+
+                const name = $("#empName").data("kendoTextBox").value().trim();
+                const email = $("#empEmail").data("kendoTextBox").value().trim();
+                const gender = $("#empGender").data("kendoDropDownList").value();
+
+                if (!name || !email || !gender) {
+                    showAlert("warning", "Name, Email and Gender are required.");
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("Name", name);
+                formData.append("Email", email);
+                formData.append("Gender", gender);
+                formData.append("Image", $("#currentImageName").val());
+
+                if (selectedFile) {
+                    formData.append("ImageFile", selectedFile);
+                }
+               for (let pair of formData.entries()) {
+    console.log(pair[0] + ": " + pair[1]);
+}
+                $.ajax({
+                    url: `/Employee/UpdateUser?EmployeeId=${empId}`,
+                    type: "PUT",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function (res) {
+                        if (res.success) {
+                            showAlert("success", res.message || "Profile updated successfully.");
+                            if (selectedFile) {
+                                const updatedSrc = $("#newImagePreview").attr("src");
+                                $("#currentImagePreview").attr("src", updatedSrc);
+                                $("#newPreviewContainer").addClass("d-none");
+                                selectedFile = null;
+                            }
+                        } else {
+                            showAlert("danger", res.message || "Failed to update profile.");
+                        }
+                    },
+                    error: function () {
+                        showAlert("danger", "Error while updating profile.");
+                    }
+                });
+            });
+        });
+    </script>
+}

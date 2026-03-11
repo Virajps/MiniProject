@@ -1,0 +1,418 @@
+@model DashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/AdminLayout.cshtml";
+}
+
+<style>
+.dashboard-container{
+    max-width:1350px;
+    margin-left:20px;
+}
+
+/* STAT CARDS */
+
+.stat-card {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+/* hover effect */
+
+.stat-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+}
+
+/* icon animation */
+
+.stat-card:hover .k-icon {
+    transform: scale(1.2);
+    transition: 0.3s;
+}
+
+/* number highlight */
+
+.stat-card:hover h3 {
+    color: #000;
+}
+
+/* angled border */
+
+.stat-card:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    border-top: 3px solid;
+    border-right: 3px solid;
+    transform: skewX(-25deg);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover:before {
+    border-width: 4px;
+}
+
+/* card body */
+
+.stat-body {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.stat-body h3 {
+    margin: 0;
+    font-weight: 700;
+}
+
+.stat-body p {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.stat-card .k-icon {
+    font-size: 30px;
+}
+
+/* border colors */
+
+.emp:before {
+    border-color: #1ca7ec;
+}
+
+.present:before {
+    border-color: #6ab04c;
+}
+
+.absent:before {
+    border-color: #f39c12;
+}
+
+.late:before {
+    border-color: #7c7c7c;
+}
+
+.k-card {
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* DASHBOARD CARDS */
+
+.dashboard-card{
+    background:white;
+    border-radius:8px;
+    padding:18px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.08);
+    height:100%;
+}
+
+/* card title */
+
+.card-title{
+    font-size:16px;
+    font-weight:600;
+    margin-bottom:12px;
+    color:#1f2937;
+}
+
+/* chart size */
+
+#taskChart{
+    height:350px;
+}
+
+/* spacing */
+
+.row.mt-3{
+    margin-top:20px;
+}
+
+/* GRID DESIGN */
+
+#attendanceGrid .k-grid-header{
+    font-weight:600;
+    background:#f8fafc;
+    border-bottom:1px solid #e5e7eb;
+}
+
+#attendanceGrid .k-grid-header th{
+    font-weight:600;
+    color:#374151;
+    font-size:13px;
+}
+
+#attendanceGrid .k-grid-content tr{
+    border-bottom:1px solid #f1f5f9;
+}
+
+#attendanceGrid .k-grid-content tr:hover{
+    background:#f9fafb;
+}
+
+#attendanceGrid td{
+    padding:12px 10px;
+    font-size:13px;
+}
+
+/* remove heavy grid borders */
+
+.k-grid{
+    border:none;
+}
+
+/* pagination */
+
+.k-pager-wrap{
+    background:#f8fafc;
+    border-top:1px solid #e5e7eb;
+}
+
+/* STATUS BADGES */
+
+.status-badge{
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:500;
+}
+
+.badge-regular{
+    background:#dcfce7;
+    color:#166534;
+}
+
+.badge-late{
+    background:#fef3c7;
+    color:#92400e;
+}
+
+.badge-early{
+    background:#fee2e2;
+    color:#991b1b;
+}
+
+/* PAGER COLORS */
+
+.k-pager-numbers .k-state-selected,
+.k-pager-numbers .k-selected{
+    background:#1ca7ec !important;
+    border-color:#1ca7ec !important;
+    color:white !important;
+}
+
+.k-pager-numbers a:hover{
+    background:#e0f2fe !important;
+    color:#1ca7ec !important;
+}
+
+.k-pager-nav{
+    color:#1ca7ec !important;
+}
+
+/* dropdown */
+
+.k-dropdown .k-input{
+    color:#1ca7ec;
+}
+
+/* KENDO LINK COLOR FIX */
+
+a.k-link{
+    color:#1ca7ec !important;
+}
+
+a.k-link:hover{
+    color:#0ea5e9 !important;
+}
+
+.k-state-selected > .k-link,
+.k-selected > .k-link{
+    color:#1ca7ec !important;
+}
+
+/* pager links */
+
+.k-pager-wrap a.k-link{
+    color:#1ca7ec !important;
+}
+
+.k-pager-wrap a.k-link:hover{
+    background:#e0f2fe !important;
+}
+
+/* grid header sorting */
+
+.k-grid-header a.k-link{
+    color:#374151 !important;
+}
+</style>
+<div class="dashboard-container">
+    <div class="row g-3">
+
+        <div class="col-md-3">
+            <div class="k-card stat-card emp">
+                <div class="k-card-body stat-body">
+                    <span class="k-icon k-i-user" style="color: #1ca7ec;"></span>
+                    <div>
+                        <h3>@Model.TotalEmployees</h3>
+                        <p>Employees</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="k-card stat-card present">
+                <div class="k-card-body stat-body">
+                    <span class="k-icon k-i-check" style="color: #6ab04c;"></span>
+                    <div>
+                        <h3>@Model.PresentToday</h3>
+                        <p>Present</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="k-card stat-card absent">
+                <div class="k-card-body stat-body">
+                    <span class="k-icon k-i-close" style="color: #f39c12;"></span>
+                    <div>
+                        <h3>@Model.AbsentToday</h3>
+                        <p>Absent</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="k-card stat-card late">
+                <div class="k-card-body stat-body">
+                    <span class="k-icon k-i-clock" style="color: #7c7c7c;"></span>
+                    <div>
+                        <h3>@Model.LateToday</h3>
+                        <p>Late Comer</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <br>
+
+    <div class="row mt-3">
+        <div class="col-lg-6">
+            <div class="dashboard-card">
+                <h5 class="card-title">Task Working Hours</h5>
+                <div id="taskChart"></div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="dashboard-card">
+                <h5 class="card-title">Recent Attendance</h5>
+                <div id="attendanceGrid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+
+    <script>
+
+        var taskData = @Html.Raw(Json.Serialize(Model.TaskHours));
+
+        $("#taskChart").kendoChart({
+            title:{ text:"Task Working Hours"},
+            legend:{ position:"bottom" },
+            tooltip:{
+                visible:true,
+                format:"{0} hrs"
+            },
+            
+            chartArea: {
+                background: "transparent"
+            },
+            seriesColors: ["#166f99", "#2185b4","#B0DFE5", "#319fd2", "#3eaee2", "#89CFF0"],
+            seriesDefaults: {
+                type: "donut",
+                startAngle: 300
+            }, 
+            series:[{
+                field:"hours",
+                categoryField:"task",
+                data:taskData,
+                overlay:{
+                gradient:"none"
+                },
+                labels:{
+                    visible:true,
+                    position: "outsideEnd",
+                    background: "transparent",
+                    template:"#= category #"
+                }
+            }]
+        });
+
+        var attendance = @Html.Raw(Json.Serialize(Model.RecentAttendance));
+
+        $("#attendanceGrid").kendoGrid({
+            dataSource:{
+                data:attendance,
+                pageSize:5
+            },
+            height:350,
+            sortable:true,
+            pageable:{
+                refresh:true,
+                pageSizes:[5,10,20]
+            },
+            columns:[
+                { field:"employeeName", title:"Employee", width:150 },
+
+                { field:"checkIn", title:"Check In", width:120 },
+
+                { field:"checkOut", title:"Check Out", width:120 },
+
+                { field:"workingHour", title:"Working Hour", width:120 },
+
+                {
+                    field:"status",
+                    title:"Status",
+                    width:130,
+                    template:function(data){
+                        let color="badge-regular";
+
+                        if(data.status==="LateIn") color="badge-late";
+                        if(data.status==="EarlyOut") color="badge-early";
+
+                        return `<span class="status-badge ${color}">${data.status}</span>`;
+                    }
+                }
+            ]
+        });
+
+        function resizeKendoWidgets(){
+            var chart = $("#taskChart").data("kendoChart");
+            if(chart){
+                chart.resize();
+            }
+
+            var grid = $("#attendanceGrid").data("kendoGrid");
+            if(grid){
+                grid.resize();
+            }
+        }
+
+        $(window).on("resize",function(){
+            resizeKendoWidgets();
+        });
+    </script>
+}

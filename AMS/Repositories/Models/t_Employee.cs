@@ -19,6 +19,9 @@ namespace Repositories.Models
         public string? Email { get; set; }
 
         [Required]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long.")]
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$",
+            ErrorMessage = "Password must contain at least 8 characters, including uppercase, lowercase, number, and special character.")]
         public string? Password { get; set; }
 
         [Required]
@@ -30,7 +33,6 @@ namespace Repositories.Models
 
         public IFormFile? ImageFile { get; set; }
 
-        [Required]
         public string? Role { get; set; }
     }
 }
