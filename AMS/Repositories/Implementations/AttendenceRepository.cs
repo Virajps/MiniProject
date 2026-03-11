@@ -17,9 +17,27 @@ namespace Repositories.Implementations
         {
             _conn = conn;
         }
-        public async Task<List<vm_TaskSummary>> GetEmployeeTaskSummary(int EmployeeId)
+        public async Task<List<vm_TaskSummary>> GetEmployeeTaskSummary(int EmployeeId, string type, DateTime date)
         {
             var list = new List<vm_TaskSummary>();
+            DateTime start;
+            DateTime end;
+
+            if (type == "year")
+            {
+                start = new DateTime(date.Year, 1, 1);
+                end = start.AddYears(1);
+            }
+            else if (type == "month")
+            {
+                start = new DateTime(date.Year, date.Month, 1);
+                end = start.AddMonths(1);
+            }
+            else
+            {
+                start = date.AddDays(-(int)date.DayOfWeek);
+                end = start.AddDays(7);
+            }
 
             try
             {
@@ -37,11 +55,15 @@ namespace Repositories.Implementations
         FROM t_attendance
         WHERE c_empid = @empid
         AND c_tasktype IS NOT NULL
+        AND c_attenddate >= @start
+        AND c_attenddate < @end
     ) sub
     GROUP BY task;
 ", _conn);
 
                 cmd.Parameters.AddWithValue("@empid", EmployeeId);
+                cmd.Parameters.AddWithValue("@start", start);
+                cmd.Parameters.AddWithValue("@end", end);
                 await _conn.OpenAsync();
                 using var r = await cmd.ExecuteReaderAsync();
                 while (await r.ReadAsync())
@@ -231,6 +253,28 @@ namespace Repositories.Implementations
                     });
 
                     result.TotalHours += hours;
+                }
+
+                await r.CloseAsync();
+
+                using var summaryCmd = new NpgsqlCommand(@"
+                    SELECT
+                        COUNT(CASE WHEN c_attendstatus='LateIn' THEN 1 END) AS late_in,
+                        COUNT(CASE WHEN c_attendstatus='EarlyOut' THEN 1 END) AS early_out
+                    FROM t_attendance
+                    WHERE c_empid=@id
+                    AND c_attenddate>=@start
+                    AND c_attenddate<@end;", _conn);
+
+                summaryCmd.Parameters.AddWithValue("@id", empId);
+                summaryCmd.Parameters.AddWithValue("@start", start);
+                summaryCmd.Parameters.AddWithValue("@end", end);
+
+                using var summaryReader = await summaryCmd.ExecuteReaderAsync();
+                if (await summaryReader.ReadAsync())
+                {
+                    result.LateInCount = Convert.ToInt32(summaryReader["late_in"]);
+                    result.EarlyOutCount = Convert.ToInt32(summaryReader["early_out"]);
                 }
             }
             catch (Exception ex)
@@ -430,6 +474,61 @@ namespace Repositories.Implementations
                             });
                         }
                     }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
+
+            return list;
+        }
+
+        public async Task<List<vm_AttendanceScheduler>> GetAttendanceScheduler1(int empId)
+        {
+            var list = new List<vm_AttendanceScheduler>();
+
+            try
+            {
+                await _conn.CloseAsync();
+
+                using var cmd = new NpgsqlCommand(
+                @"SELECT * FROM t_attendance
+          WHERE c_empid=@id
+          ORDER BY c_attenddate", _conn);
+
+                cmd.Parameters.AddWithValue("@id", empId);
+
+                await _conn.OpenAsync();
+
+                using var r = await cmd.ExecuteReaderAsync();
+
+                while (await r.ReadAsync())
+                {
+                    DateOnly dateOnly = r.GetFieldValue<DateOnly>(r.GetOrdinal("c_attenddate"));
+                    DateTime date = dateOnly.ToDateTime(TimeOnly.MinValue);
+
+                    int inH = r["c_clockinhour"] == DBNull.Value ? 9 : Convert.ToInt32(r["c_clockinhour"]);
+                    int inM = r["c_clockinmin"] == DBNull.Value ? 0 : Convert.ToInt32(r["c_clockinmin"]);
+
+                    int outH = r["c_clockouthour"] == DBNull.Value ? 17 : Convert.ToInt32(r["c_clockouthour"]);
+                    int outM = r["c_clockoutmin"] == DBNull.Value ? 0 : Convert.ToInt32(r["c_clockoutmin"]);
+
+                    list.Add(new vm_AttendanceScheduler
+                    {
+                        Id = Convert.ToInt32(r["c_attendid"]),
+                        Title = "Attendance",
+                        Start = new DateTime(date.Year, date.Month, date.Day, inH, inM, 0),
+                        End = new DateTime(date.Year, date.Month, date.Day, outH, outM, 0),
+                        Status = r["c_attendstatus"]?.ToString(),
+                        WorkType = r["c_worktype"]?.ToString(),
+                        TaskType = r["c_tasktype"]?.ToString(),
+                        WorkingHour = r["c_workinghour"] == DBNull.Value ? 0 : Convert.ToInt32(r["c_workinghour"])
+                    });
                 }
             }
             catch (Exception ex)
