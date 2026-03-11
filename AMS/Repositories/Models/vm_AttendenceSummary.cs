@@ -32,6 +32,8 @@ public class vm_AttendanceChart
 public class vm_AttendanceChartResult
 {
   public int TotalHours { get; set; }
+  public int LateInCount { get; set; }
+  public int EarlyOutCount { get; set; }
   public List<vm_AttendanceChart> ChartData { get; set; } = new();
 }
 

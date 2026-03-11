@@ -1,4 +1,5 @@
 using System.Threading.Tasks.Dataflow;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Repositories;
 using Repositories.Implementations;
@@ -10,6 +11,10 @@ namespace MyApp.Namespace
     [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     public class EmployeeController : Controller
     {
+        private static readonly Regex StrongPasswordRegex = new(
+            @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$",
+            RegexOptions.Compiled);
+
         private readonly IAttendenceInterface _repo;
         private readonly IWebHostEnvironment _env;
         private readonly IEmployeeInterface _employee;
@@ -105,7 +110,7 @@ namespace MyApp.Namespace
         }
 
         [AcceptVerbs("POST", "PUT")]
-        public async Task<IActionResult> ChangePassword([FromForm] vm_ChangePassword changePassword)
+        public async Task<IActionResult> ChangePassword([FromForm] vm_ChangePassword? changePassword)
         {
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
@@ -120,16 +125,34 @@ namespace MyApp.Namespace
                     return Unauthorized(new { success = false, message = "Employee session not found." });
                 }
 
-                if (string.IsNullOrWhiteSpace(changePassword.OldPassword) ||
-                    string.IsNullOrWhiteSpace(changePassword.NewPassword) ||
-                    string.IsNullOrWhiteSpace(changePassword.ConfirmPassword))
+                if (changePassword == null)
+                {
+                    return BadRequest(new { success = false, message = "Invalid request payload." });
+                }
+
+                var oldPassword = changePassword.OldPassword?.Trim();
+                var newPassword = changePassword.NewPassword?.Trim();
+                var confirmPassword = changePassword.ConfirmPassword?.Trim();
+
+                if (string.IsNullOrWhiteSpace(oldPassword) ||
+                    string.IsNullOrWhiteSpace(newPassword) ||
+                    string.IsNullOrWhiteSpace(confirmPassword))
                 {
                     return BadRequest(new { success = false, message = "All password fields are required." });
                 }
 
-                if (!string.Equals(changePassword.NewPassword, changePassword.ConfirmPassword, StringComparison.Ordinal))
+                if (!string.Equals(newPassword, confirmPassword, StringComparison.Ordinal))
                 {
                     return BadRequest(new { success = false, message = "New password and confirm password do not match." });
+                }
+
+                if (!StrongPasswordRegex.IsMatch(newPassword))
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Password must be minimum 8 characters and include 1 uppercase, 1 lowercase, 1 digit, and 1 special character."
+                    });
                 }
 
                 var currentUser = await _employee.GetUserById(empId.Value);
@@ -138,11 +161,14 @@ namespace MyApp.Namespace
                     return BadRequest(new { success = false, message = "User not found." });
                 }
 
-                if (!string.Equals(currentUser.Password, changePassword.OldPassword, StringComparison.Ordinal))
+                if (!string.Equals(currentUser.Password, oldPassword, StringComparison.Ordinal))
                 {
                     return BadRequest(new { success = false, message = "Current password is incorrect." });
                 }
 
+                changePassword.OldPassword = oldPassword;
+                changePassword.NewPassword = newPassword;
+                changePassword.ConfirmPassword = confirmPassword;
                 changePassword.EmployeeId = empId.Value;
 
                 var result = await _employee.ChangePassword(changePassword);
@@ -340,7 +366,8 @@ namespace MyApp.Namespace
                     return Unauthorized(new { success = false, message = "Employee session not found." });
                 }
 
-                var attendance = await _repo.GetAttendanceScheduler(empId.Value);
+                // Return all-time total hours till now.
+                var attendance = await _repo.GetAttendanceScheduler1(empId.Value);
                 int totalHours = attendance?.Sum(x => x.WorkingHour) ?? 0;
 
                 return Ok(new
@@ -352,7 +379,7 @@ namespace MyApp.Namespace
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetTaskSummary()
+        public async Task<IActionResult> GetTaskSummary(string type = "week", DateTime? date = null)
         {
             var role = HttpContext.Session.GetString("Role");
             if(role != "Employee")
@@ -367,7 +394,10 @@ namespace MyApp.Namespace
                     return Unauthorized(new { success = false, message = "Employee session not found." });
                 }
 
-                var data = await _repo.GetEmployeeTaskSummary(empId.Value);
+                var effectiveType = string.IsNullOrWhiteSpace(type) ? "week" : type.ToLowerInvariant();
+                var effectiveDate = date ?? DateTime.Today;
+
+                var data = await _repo.GetEmployeeTaskSummary(empId.Value, effectiveType, effectiveDate);
                 return Ok(new { success = true, data = data ?? new List<vm_TaskSummary>() });
             }
         }
@@ -394,7 +424,7 @@ namespace MyApp.Namespace
                 return Unauthorized(new { success = false, message = "Employee session not found." });
             }
 
-            var data = await _repo.GetAttendanceScheduler(empId.Value);
+            var data = await _repo.GetAttendanceScheduler1(empId.Value);
 
             if (data != null)
             {
@@ -407,4 +437,3 @@ namespace MyApp.Namespace
         }
     }
 }
-
