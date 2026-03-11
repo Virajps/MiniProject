@@ -4,6 +4,7 @@ using Repositories.Models;
 
 namespace MyApp.Namespace
 {
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     public class AdminController : Controller
     {
         private readonly IAttendenceInterface _repo;
@@ -29,7 +30,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Admin")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else{
                 var data = _dashboardRepository.GetDashboardData();
@@ -43,7 +44,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Admin")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else{
                 return View();
@@ -56,7 +57,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Admin")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {
@@ -71,7 +72,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Admin")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {
@@ -96,7 +97,7 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Admin")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {
@@ -110,12 +111,41 @@ namespace MyApp.Namespace
             var role = HttpContext.Session.GetString("Role");
             if(role != "Admin")
             {
-                return BadRequest("You Dont Access for this page");
+                return RedirectToAction("Unauthorized","User");
             }
             else
             {   
                 var result = await _dashboardRepository.GetAllUsersForAccess();
                 return Ok(new { success = true, data = result });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult ProgressReport()
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if(role != "Admin")
+            {
+                return RedirectToAction("Unauthorized","User");
+            }
+            else
+            {  
+                return View();
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEmployeeProgress(int empId,int month,int year)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if(role != "Admin")
+            {
+                return RedirectToAction("Unauthorized","User");
+            }
+            else
+            { 
+                var data = await _dashboardRepository.GetEmployeeProgress(empId,month,year);
+                return Json(data);
             }
         }
     }

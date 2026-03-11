@@ -1,0 +1,144 @@
+@{
+    ViewData["Title"] = "Unauthorized Access";
+    Layout = null; 
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Unauthorized</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/register.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/MVC.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/kendo/kendo.default-v2.min.css" />
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/lib/kendo/kendo.all.min.js"></script>
+
+<style>
+
+    body{
+        margin:0;
+        height:100vh;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        font-family:Segoe UI;
+    }
+
+    .container-box{
+        background:white;
+        padding:50px;
+        border-radius:15px;
+        text-align:center;
+        width:420px;
+        box-shadow:0 15px 35px rgba(0,0,0,0.2);
+        animation: fadeIn 1s ease-in-out;
+    }
+
+    .lock-icon{
+        font-size:70px;
+        color:#ff4d4d;
+        animation: shake 1.5s infinite;
+    }
+
+    .title{
+        font-size:28px;
+        margin-top:10px;
+        font-weight:600;
+    }
+
+    .subtitle{
+        margin-top:10px;
+        color:#777;
+        font-size:15px;
+    }
+
+    .btn-area{
+        margin-top:30px;
+    }
+
+    @@keyframes fadeIn{
+        from{opacity:0; transform:translateY(40px);}
+        to{opacity:1; transform:translateY(0);}
+    }
+
+    @@keyframes shake{
+        0%{transform:rotate(0deg);}
+        25%{transform:rotate(5deg);}
+        50%{transform:rotate(-5deg);}
+        75%{transform:rotate(5deg);}
+        100%{transform:rotate(0deg);}
+    }
+
+    .login-btn{
+        background: linear-gradient(135deg,#0078d7,#00b4db);
+        border: none;
+        color: white;
+        padding: 12px 28px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    /* hover effect */
+    .login-btn:hover{
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        background: linear-gradient(135deg,#005fa3,#0096c7);
+    }
+
+    /* click animation */
+    .login-btn:active{
+        transform: scale(0.95);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    }
+
+</style>
+</head>
+
+<body>
+
+<div class="container-box">
+
+    <div class="lock-icon">
+        🔒
+    </div>
+
+    <div class="title">
+        Unauthorized Access
+    </div>
+
+    <div class="subtitle">
+        You do not have permission to access this page.
+        Please login with proper credentials.
+    </div>
+
+    <div class="btn-area">
+        <button id="btnLogin" class="login-btn">Back to Login</button>
+    </div>
+
+</div>
+
+<script>
+
+$("#btnLogin").kendoButton({
+    themeColor: "primary",
+    size: "large",
+    click: function () {
+        window.location.href = "/User/Login";
+    }
+});
+
+</script>
+
+</body>
+</html>
