@@ -160,6 +160,7 @@ $(document).ready(function () {
                 gradient:"none"
                 },
                 data: [
+                    data.totalAttendance,
                     data.present,
                     data.lateIn,
                     data.earlyOut,
@@ -168,7 +169,7 @@ $(document).ready(function () {
             }],
 
             categoryAxis: {
-                categories: ["Present", "Late", "EarlyOut", "Absent"]
+                categories: ["Total Attendance","Regular", "Late", "EarlyOut", "Absent"]
             }
 
         });
@@ -206,7 +207,8 @@ $(document).ready(function () {
             dataSource: [data],
 
             columns: [
-                { field: "present", title: "Present" },
+                { field: "totalAttendance", title: "Total Attendance" },
+                { field: "present", title: "Regular" },
                 { field: "lateIn", title: "Late" },
                 { field: "earlyOut", title: "Early Out" },
                 { field: "absent", title: "Absent" },

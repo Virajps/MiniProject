@@ -9,6 +9,8 @@ namespace Repositories.Models
         public int LateIn { get; set; }
         public int EarlyOut { get; set; }
         public int Absent { get; set; }
+        public int TotalAttendance { get; set; }
+        
 
         public int TotalWorkingHours { get; set; }
 

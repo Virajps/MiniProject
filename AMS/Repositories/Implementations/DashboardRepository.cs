@@ -140,7 +140,7 @@ namespace Repositories.Implementations
                 using var cmd = new NpgsqlCommand(
                     @"SELECT e.c_empid, e.c_name, e.c_email, e.c_role, e.c_status, SUM(a.c_workinghour) as TotalHour 
                     FROM t_employee e
-                    JOIN t_attendance a
+                    LEFT JOIN t_attendance a
                     ON e.c_empid = a.c_empid
                     WHERE c_role = 'Employee' 
                     GROUP BY e.c_empid, e.c_name, e.c_email, e.c_role, e.c_status 
@@ -182,20 +182,29 @@ namespace Repositories.Implementations
                 await _conn.OpenAsync();
 
                 using var cmd = new NpgsqlCommand(@"
-        SELECT
-            e.c_name,
-            COUNT(*) FILTER (WHERE a.c_attendstatus='Regular') as present,
-            COUNT(*) FILTER (WHERE a.c_attendstatus='LateIn') as late,
-            COUNT(*) FILTER (WHERE a.c_attendstatus='EarlyOut') as early,
-            COUNT(*) FILTER (WHERE a.c_attendstatus='Absent') as absent,
-            SUM(a.c_workinghour) as hours
-        FROM t_attendance a
-        JOIN t_employee e ON e.c_empid = a.c_empid
-        WHERE a.c_empid=@emp
-        AND EXTRACT(MONTH FROM a.c_attenddate)=@month
-        AND EXTRACT(YEAR FROM a.c_attenddate)=@year
-        GROUP BY e.c_name
-        ", _conn);
+                            SELECT
+                        e.c_name,
+
+                        COUNT(*) FILTER (WHERE a.c_attendstatus='Regular') AS present,
+                        COUNT(*) FILTER (WHERE a.c_attendstatus='LateIn') AS late,
+                        COUNT(*) FILTER (WHERE a.c_attendstatus='EarlyOut') AS early,
+
+                        (
+                            EXTRACT(DAY FROM (DATE_TRUNC('month', a.c_attenddate) + INTERVAL '1 month - 1 day'))
+                            - COUNT(DISTINCT a.c_attenddate)
+                        ) AS absent,
+
+                        SUM(a.c_workinghour) AS hours
+
+                    FROM t_attendance a
+                    JOIN t_employee e ON e.c_empid = a.c_empid
+
+                    WHERE a.c_empid = @emp
+                    AND EXTRACT(MONTH FROM a.c_attenddate) = @month
+                    AND EXTRACT(YEAR FROM a.c_attenddate) = @year
+
+                    GROUP BY e.c_name, DATE_TRUNC('month', a.c_attenddate);
+                    ", _conn);
 
                 cmd.Parameters.AddWithValue("@emp", empId);
                 cmd.Parameters.AddWithValue("@month", month);
@@ -210,6 +219,7 @@ namespace Repositories.Implementations
                     report.LateIn = Convert.ToInt32(r["late"]);
                     report.EarlyOut = Convert.ToInt32(r["early"]);
                     report.Absent = Convert.ToInt32(r["absent"]);
+                    report.TotalAttendance = report.Present + report.LateIn +report.EarlyOut ;
                     report.TotalWorkingHours = r["hours"] == DBNull.Value ? 0 : Convert.ToInt32(r["hours"]);
                 }
 
