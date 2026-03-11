@@ -113,6 +113,11 @@
         color:#1ca7ec !important;
     }
 
+    .Holiday{
+        background:#90a4ae;
+        color:white;
+    }
+
 </style>
 <div class="scheduler-container">
 
@@ -131,7 +136,7 @@
 <script>
     $(document).ready(function () {
 
-        $.get("/Employee/GetAllUsers", function (res) {
+        $.get("/Admin/AccessControlData", function (res) {
             if (res.success) {
                 res.data.forEach(emp => {
                     $("#employeeSelect").append(
