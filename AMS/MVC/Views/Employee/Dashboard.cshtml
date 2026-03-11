@@ -150,7 +150,7 @@
             <button class="periodBtn periodFilterBtn" data-period="year">This Year</button>
         </div>
         <div>
-            <button id="allYearsTotalBtn" type="button" class="periodBtn">All Years Total</button>
+            <button id="allYearsTotalBtn" type="button" class="periodBtn">All Total</button>
         </div>
     </div>
 
@@ -208,8 +208,8 @@
 
     <div id="allYearsTotalDialog" class="all-years-modal d-none">
         <div class="all-years-modal-card">
-            <h5 class="mb-2">All Years Total Hours</h5>
-            <p class="mb-2 text-muted">Total working hours across all attendance records:</p>
+            <h5 id="allYearsTotalTitle" class="mb-2">All Total Hours</h5>
+            <p class="mb-2 text-muted">Total working hours till now:</p>
             <div id="allYearsTotalValue" class="all-years-value mb-3">0</div>
             <button id="allYearsOkBtn" type="button" class="periodBtn active">OK</button>
         </div>
@@ -300,6 +300,7 @@
                 var period=$(this).data("period");
 
                 loadChartData(period);
+                loadTaskSummary(period);
 
             });
 
@@ -358,9 +359,13 @@
                         }, 0));
 
                         const avgHours = mappedData.length ? (totalHours / mappedData.length).toFixed(2) : "0.00";
+                        const lateInCount = Number(res?.lateInCount ?? res?.LateInCount ?? 0);
+                        const earlyOutCount = Number(res?.earlyOutCount ?? res?.EarlyOutCount ?? 0);
 
                         $("#totalHours").text(totalHours);
                         $("#avgHours").text(avgHours);
+                        $("#latein").text(lateInCount);
+                        $("#earlyout").text(earlyOutCount);
 
                         const chart = $("#workingHoursChart").data("kendoChart");
                         chart.dataSource.data(mappedData);
@@ -370,16 +375,22 @@
                         showDashboardError(message);
                         $("#totalHours").text("0");
                         $("#avgHours").text("0.00");
+                        $("#latein").text("0");
+                        $("#earlyout").text("0");
                         const chart = $("#workingHoursChart").data("kendoChart");
                         chart.dataSource.data([]);
                     }
                 });
             }
 
-            function loadTaskSummary() {
+            function loadTaskSummary(period) {
                 $.ajax({
                     url: "/Employee/GetTaskSummary",
                     type: "GET",
+                    data: {
+                        type: period || "week",
+                        date: new Date().toISOString().split("T")[0]
+                    },
                     success: function (res) {
                         if (!res || res.success === false) {
                             showDashboardError(res?.message || "Failed to load task summary.");
@@ -431,41 +442,33 @@
                 }
 
                 function buildMonthStatusData(rawEvents, monthDate) {
-                    const minDate = new Date(Math.min(...rawEvents.map(e => new Date(e.start))));
                     const list = Array.isArray(rawEvents) ? rawEvents : [];
                     const eventMap = {};
                     const today = new Date();
                     const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                    const firstDate = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
-
-                    let workingDays = 0;
-                    let current = new Date(firstDate);
-                    
-                    while (current <= todayOnly) {
-                        const day = current.getDay(); 
-                        if (day !== 0 && day !== 6) {
-                            workingDays++;
-                        }   
-                        current.setDate(current.getDate() + 1);
-                    }
-                    const absent = workingDays - rawEvents.length
-                    list.forEach(function (item) {
-                        const key = toDateKey(item.start || item.Start);
-                        eventMap[key] = item;
-                    });
-                    $("#presentCount").text(rawEvents.length);
-                    $("#absentCount").text(absent);
 
                     const year = monthDate.getFullYear();
                     const month = monthDate.getMonth();
                     const totalDays = new Date(year, month + 1, 0).getDate();
                     const result = [];
+                    let presentCount = 0;
+                    let absentCount = 0;
+
+                    list.forEach(function (item) {
+                        const sourceDate = new Date(item.start || item.Start);
+                        if (sourceDate.getFullYear() !== year || sourceDate.getMonth() !== month) {
+                            return;
+                        }
+
+                        const key = toDateKey(sourceDate);
+                        eventMap[key] = item;
+                    });
 
                     for (let day = 1; day <= totalDays; day++) {
                         const date = new Date(year, month, day);
                         const weekDay = date.getDay();
 
-                        if (weekDay === 0 || weekDay === 6) {
+                        if (weekDay === 0) {
                             continue;
                         }
 
@@ -474,9 +477,6 @@
                             continue;
                         }
 
-                        if (firstDate > date) {
-                            continue;
-                        }
                         const key = toDateKey(date);
                         const existing = eventMap[key];
 
@@ -492,6 +492,7 @@
                                 statusClass: "present",
                                 isAllDay: false
                             });
+                            presentCount++;
                         } else {
                             result.push({
                                 id: `${key}-absent`,
@@ -502,8 +503,12 @@
                                 statusClass: "absent",
                                 isAllDay: false
                             });
+                            absentCount++;
                         }
                     }
+
+                    $("#presentCount").text(presentCount);
+                    $("#absentCount").text(absentCount);
 
                     return result;
                 }
@@ -563,30 +568,8 @@
                 });
             }
 
-            function loadAttendanceSummaryFromController() {
-                $.ajax({
-                    url: "/Employee/GetAttendanceSummary",
-                    type: "GET",
-                    success: function (res) {
-                        console.log(res)
-                            $("#earlyout").html(res.data['earlyOutCount'])
-                            $("#latein").html(res.data['lateInCount'])
-                        if (!res || res.success === false) {
-                            
-                            showDashboardError(res?.message || "Failed to load attendance summary.");
-                            return;
-                        }
-
-                    },
-                    error: function (xhr) {
-                        showDashboardError(xhr?.responseJSON?.message || "Failed to load attendance summary.");
-                    }
-                });
-            }
-
             loadChartData("week");
-            loadTaskSummary();
-            loadAttendanceSummaryFromController();
+            loadTaskSummary("week");
             initAttendanceScheduler();
 
 
