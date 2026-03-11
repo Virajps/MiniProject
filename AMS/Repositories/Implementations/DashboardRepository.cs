@@ -1,4 +1,5 @@
 using Npgsql;
+using Repositories.Models;
 namespace Repositories.Implementations
 {
     public class DashboardRepository : IDashboardRepository
@@ -65,26 +66,31 @@ namespace Repositories.Implementations
 
             // 6️⃣ Task Working Hours (Pie Chart)
             using (var cmd = new NpgsqlCommand(@"
-    SELECT 
-        c_tasktype AS task,
-        SUM(c_workinghour) AS hours
-    FROM t_attendance
-    WHERE c_tasktype IS NOT NULL
-    GROUP BY c_tasktype", _conn))
-            {
-                var reader = cmd.ExecuteReader();
-
-                while (reader.Read())
+                SELECT 
+                    task,
+                    SUM(c_workinghour) AS hours
+                FROM (
+                    SELECT 
+                        UNNEST(STRING_TO_ARRAY(c_tasktype, ',')) AS task,
+                        c_workinghour
+                    FROM t_attendance
+                    WHERE c_tasktype IS NOT NULL
+                ) t
+                GROUP BY task", _conn))
                 {
-                    model.TaskHours.Add(new TaskChartModel
-                    {
-                        Task = reader["task"].ToString(),
-                        Hours = Convert.ToInt32(reader["hours"])
-                    });
-                }
+                    var reader = cmd.ExecuteReader();
 
-                reader.Close();
-            }
+                    while (reader.Read())
+                    {
+                        model.TaskHours.Add(new TaskChartModel
+                        {
+                            Task = reader["task"].ToString(),
+                            Hours = Convert.ToInt32(reader["hours"])
+                        });
+                    }
+
+                    reader.Close();
+                }
 
             // 7️⃣ Recent Attendance
             using (var cmd = new NpgsqlCommand(@"
@@ -92,6 +98,7 @@ namespace Repositories.Implementations
             e.c_name,
             a.c_clockinhour,
             a.c_clockinmin,
+            a.c_workinghour,
             a.c_clockouthour,
             a.c_clockoutmin,
             a.c_attendstatus
@@ -112,6 +119,7 @@ namespace Repositories.Implementations
                         EmployeeName = reader["c_name"].ToString(),
                         CheckIn = checkin,
                         CheckOut = checkout,
+                        WorkingHour = reader["c_workinghour"].ToString(),
                         Status = reader["c_attendstatus"].ToString()
                     });
                 }
@@ -122,6 +130,46 @@ namespace Repositories.Implementations
             _conn.Close();
 
             return model;
+        }
+
+        public async Task<List<AccessModel>> GetAllUsersForAccess()
+        {
+            var employees = new List<AccessModel>();
+            try
+            {
+                using var cmd = new NpgsqlCommand(
+                    @"SELECT e.c_empid, e.c_name, e.c_email, e.c_role, e.c_status, SUM(a.c_workinghour) as TotalHour 
+                    FROM t_employee e
+                    JOIN t_attendance a
+                    ON e.c_empid = a.c_empid
+                    WHERE c_role = 'Employee' 
+                    GROUP BY e.c_empid, e.c_name, e.c_email, e.c_role, e.c_status 
+                    ORDER BY c_empid",
+                    _conn);
+
+                await _conn.OpenAsync();
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    employees.Add(new AccessModel
+                    {
+                        EmployeeId = reader.GetInt32(reader.GetOrdinal("c_empid")),
+                        Name = reader["c_name"]?.ToString(),
+                        Email = reader["c_email"]?.ToString(),
+                        Status = reader["c_status"]?.ToString(),
+                        TotalHour = reader["TotalHour"]?.ToString()
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Accsess Control Error: " + ex.Message);
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
+            return employees;
         }
     }
 }

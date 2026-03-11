@@ -45,6 +45,8 @@ namespace MyApp.Namespace
                 {
                     HttpContext.Session.SetInt32("EmployeeId", UserData.EmployeeId);
                     HttpContext.Session.SetString("EmployeeName", UserData.Name);
+                    HttpContext.Session.SetString("Role", UserData.Role);
+                    HttpContext.Session.SetString("ProfileImage", UserData.Image ?? "");
                     if(UserData.Role == "Admin")
                     {
                         return Json(new {success=true,role=UserData.Role});
@@ -136,7 +138,11 @@ namespace MyApp.Namespace
                     errors = errors
                 });
             }
-        
+        }
+        public async Task<IActionResult> Logout()
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login","User");
         }
     }
 }
