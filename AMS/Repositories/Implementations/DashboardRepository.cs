@@ -66,26 +66,31 @@ namespace Repositories.Implementations
 
             // 6️⃣ Task Working Hours (Pie Chart)
             using (var cmd = new NpgsqlCommand(@"
-    SELECT 
-        c_tasktype AS task,
-        SUM(c_workinghour) AS hours
-    FROM t_attendance
-    WHERE c_tasktype IS NOT NULL
-    GROUP BY c_tasktype", _conn))
-            {
-                var reader = cmd.ExecuteReader();
-
-                while (reader.Read())
+                SELECT 
+                    task,
+                    SUM(c_workinghour) AS hours
+                FROM (
+                    SELECT 
+                        UNNEST(STRING_TO_ARRAY(c_tasktype, ',')) AS task,
+                        c_workinghour
+                    FROM t_attendance
+                    WHERE c_tasktype IS NOT NULL
+                ) t
+                GROUP BY task", _conn))
                 {
-                    model.TaskHours.Add(new TaskChartModel
-                    {
-                        Task = reader["task"].ToString(),
-                        Hours = Convert.ToInt32(reader["hours"])
-                    });
-                }
+                    var reader = cmd.ExecuteReader();
 
-                reader.Close();
-            }
+                    while (reader.Read())
+                    {
+                        model.TaskHours.Add(new TaskChartModel
+                        {
+                            Task = reader["task"].ToString(),
+                            Hours = Convert.ToInt32(reader["hours"])
+                        });
+                    }
+
+                    reader.Close();
+                }
 
             // 7️⃣ Recent Attendance
             using (var cmd = new NpgsqlCommand(@"
