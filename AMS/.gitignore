@@ -18,7 +18,7 @@ DataProtection-Keys/
 # ASP.NET Core local config
 **/appsettings.Development.json
 **/appsettings.Local.json
-**/appsettings.json
+appsettings.json
 secrets.json
 
 # Logs and temp files
