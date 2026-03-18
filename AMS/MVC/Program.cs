@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.DataProtection;
 using Repositories.Implementations;
 using Repositories.Interfaces;
+using Repositories.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var dataProtectionPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<ElasticSearchService>();
 builder.Services.AddScoped<IUserInterface, UserRepository>();
 builder.Services.AddScoped<IEmployeeInterface, EmployeeRepository>();
 builder.Services.AddScoped<IAttendenceInterface, AttendenceRepository>();
