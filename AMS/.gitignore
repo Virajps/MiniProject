@@ -19,6 +19,8 @@ DataProtection-Keys/
 **/appsettings.Development.json
 **/appsettings.Local.json
 appsettings.json
+**/appsettings.json
+
 secrets.json
 
 # Logs and temp files
