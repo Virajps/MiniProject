@@ -11,11 +11,14 @@ namespace MyApp.Namespace
         private readonly IWebHostEnvironment _env;
         private readonly IUserInterface _empRepo;
 
-        public UserController(IWebHostEnvironment env, IUserInterface emp)
+        private readonly IGmailSmtpSenderInterface _email;
+
+        public UserController(IWebHostEnvironment env, IUserInterface emp, IGmailSmtpSenderInterface email)
         {
             _empRepo = emp;
             // myconfig = confi;
             _env = env;
+            _email = email;
         }
 
         // GET: UserController
@@ -116,6 +119,8 @@ namespace MyApp.Namespace
             var status = await _empRepo.RegisterUser(emp);
             if(status == 1)
             {
+                await _email.Welcome(toEmail: emp.Email, userName: emp.Name);
+
                 return Json(new { success = true, message = "Registration Successful" });
             }
             else if (status == 0)
