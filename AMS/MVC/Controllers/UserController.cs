@@ -12,14 +12,17 @@ namespace MyApp.Namespace
     {
         private readonly IWebHostEnvironment _env;
         private readonly IUserInterface _empRepo;
-        private readonly ElasticSearchService _elasticSearch;
-
+        private readonly IRedisUserService _redis;
+        private readonly IRabbitRegistration _rabbit;
+        private readonly ElasticSearchService _elasticSearch; 
         private readonly IGmailSmtpSenderInterface _email;
-
-        public UserController(IWebHostEnvironment env, IUserInterface emp, IGmailSmtpSenderInterface email, ElasticSearchService elasticSearch)
+        public UserController(IWebHostEnvironment env, IUserInterface emp ,IRedisUserService redis,IRabbitRegistration rabbit, IGmailSmtpSenderInterface email, ElasticSearchService elasticSearch)
         {
             _empRepo = emp;
             _env = env;
+            _redis=redis;
+            _rabbit=rabbit;
+
             _email = email;
             _elasticSearch = elasticSearch;
         }
@@ -121,9 +124,15 @@ namespace MyApp.Namespace
                 emp.Image = fileName;
             }
             Console.WriteLine("user.c_fname: " + emp.Name);
+
             var status = await _empRepo.RegisterUser(emp);
             if(status == 1)
             {
+                await _redis.SetUserAsync(emp);
+                var cachedUser=await _redis.GetUserAsync(emp.Email??string.Empty);
+            using var connection = await _rabbit.GetConnection();
+
+            await _rabbit.PublishUserRegistrationAsync(connection, emp);
                 await _email.Welcome(toEmail: emp.Email, userName: emp.Name);
 
                 return Json(new { success = true, message = "Registration Successful" });
