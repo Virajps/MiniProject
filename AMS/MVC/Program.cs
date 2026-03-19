@@ -70,4 +70,34 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=User}/{action=Index}/{id?}");
 
+async Task IndexDataOnStartup()
+{
+    using var scope = app.Services.CreateScope();
+    var AttendRepo = scope.ServiceProvider.GetRequiredService<IAttendenceInterface>();
+    var esService = scope.ServiceProvider.GetRequiredService<ElasticSearchService>();
+    try
+    {
+        await esService.CreateIndexAsync();
+        var attendance = await AttendRepo.GetAllAttendance();
+        if (attendance.Count > 0)
+        {
+            foreach (var Attend in attendance)
+            {
+                await esService.IndexAttendanceAsync(Attend);
+            }
+            Console.WriteLine($" {attendance.Count} attendance indexed successfully in ElasticSearch.");
+        }
+        else
+        {
+            Console.WriteLine(" No attendance found in Database");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($" Error indexing attendance: {ex.Message}");
+    }
+}
+// Run indexing on startup
+await IndexDataOnStartup();
+
 app.Run();

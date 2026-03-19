@@ -1,7 +1,9 @@
+using System.Runtime.Intrinsics.Arm;
 using Microsoft.AspNetCore.Mvc;
 using Repositories;
 using Repositories.Interfaces;
 using Repositories.Models;
+using Repositories.Services;
 
 namespace MyApp.Namespace
 {
@@ -10,15 +12,16 @@ namespace MyApp.Namespace
     {
         private readonly IWebHostEnvironment _env;
         private readonly IUserInterface _empRepo;
+        private readonly ElasticSearchService _elasticSearch;
 
         private readonly IGmailSmtpSenderInterface _email;
 
-        public UserController(IWebHostEnvironment env, IUserInterface emp, IGmailSmtpSenderInterface email)
+        public UserController(IWebHostEnvironment env, IUserInterface emp, IGmailSmtpSenderInterface email, ElasticSearchService elasticSearch)
         {
             _empRepo = emp;
-            // myconfig = confi;
             _env = env;
             _email = email;
+            _elasticSearch = elasticSearch;
         }
 
         // GET: UserController
@@ -46,10 +49,12 @@ namespace MyApp.Namespace
         public async Task<IActionResult> Login(vm_login login)
         {
             t_Employee UserData = await _empRepo.LoginUser(login);
+            t_Attendance attendance = new t_Attendance();
             if (ModelState.IsValid)
             {
                 if (UserData.EmployeeId != 0)
                 {
+                    await _elasticSearch.IndexAttendanceAsync(attendance);
                     HttpContext.Session.SetInt32("EmployeeId", UserData.EmployeeId);
                     HttpContext.Session.SetString("EmployeeName", UserData.Name);
                     HttpContext.Session.SetString("Role", UserData.Role);
