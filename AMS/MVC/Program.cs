@@ -10,6 +10,13 @@ var dataProtectionPath = Path.Combine(builder.Environment.ContentRootPath, "Data
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<ElasticSearchService>();
+
+// for mail
+builder.Services.Configure<Repositories.Models.EmailSettings>(
+    builder.Configuration.GetSection(Repositories.Models.EmailSettings.SectionName));
+builder.Services.AddTransient<Repositories.Interfaces.IGmailSmtpSenderInterface, Repositories.Services.GmailSmtpSender>();
+
+
 builder.Services.AddScoped<IUserInterface, UserRepository>();
 builder.Services.AddScoped<IEmployeeInterface, EmployeeRepository>();
 builder.Services.AddScoped<IAttendenceInterface, AttendenceRepository>();

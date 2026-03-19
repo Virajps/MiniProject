@@ -14,10 +14,13 @@ namespace MyApp.Namespace
         private readonly IUserInterface _empRepo;
         private readonly ElasticSearchService _elasticSearch;
 
-        public UserController(IWebHostEnvironment env, IUserInterface emp, ElasticSearchService elasticSearch)
+        private readonly IGmailSmtpSenderInterface _email;
+
+        public UserController(IWebHostEnvironment env, IUserInterface emp, IGmailSmtpSenderInterface email, ElasticSearchService elasticSearch)
         {
             _empRepo = emp;
             _env = env;
+            _email = email;
             _elasticSearch = elasticSearch;
         }
 
@@ -121,6 +124,8 @@ namespace MyApp.Namespace
             var status = await _empRepo.RegisterUser(emp);
             if(status == 1)
             {
+                await _email.Welcome(toEmail: emp.Email, userName: emp.Name);
+
                 return Json(new { success = true, message = "Registration Successful" });
             }
             else if (status == 0)
