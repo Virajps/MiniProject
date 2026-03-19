@@ -13,13 +13,8 @@ builder.Services.AddScoped<IEmployeeInterface, EmployeeRepository>();
 builder.Services.AddScoped<IAttendenceInterface, AttendenceRepository>();
 builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IRedisUserService, RedisUserService>();
+
 builder.Services.AddScoped<IRabbitRegistration,RabbitRegistration>();
-builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
-{
-    var configuration = provider.GetRequiredService<IConfiguration>();
-    var redisConnectionString = configuration["Redis:ConnectionString"];
-    return ConnectionMultiplexer.Connect(redisConnectionString);
-});
 
 builder.Services.AddSingleton<IDatabase>(provider =>
 {
@@ -27,6 +22,20 @@ builder.Services.AddSingleton<IDatabase>(provider =>
     return multiplexer.GetDatabase();
 });
 
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var options = new ConfigurationOptions
+    {
+         EndPoints= { {"redis-13720.crce286.ap-south-1-1.ec2.cloud.redislabs.com", 13720} },
+                User="default",
+                Password="3onIHgjIU4yOKGIN4oz9BOZHCusNhjgU",
+
+        Ssl = false, 
+        AbortOnConnectFail = false
+    };
+
+    return ConnectionMultiplexer.Connect(options);
+});
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = "localhost:6379"; // Redis Server Address
