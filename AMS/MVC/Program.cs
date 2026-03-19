@@ -1,3 +1,5 @@
+using Elastic.Clients.Elasticsearch;
+using Elastic.Transport;
 using Microsoft.AspNetCore.DataProtection;
 using Repositories.Implementations;
 using Repositories.Interfaces;
@@ -22,7 +24,19 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 builder.Services.AddControllers();
-
+builder.Services.AddSingleton(provider =>
+{
+    var configuration = builder.Configuration;
+    var settings = new ElasticsearchClientSettings(new
+    Uri(configuration["Elasticsearch:Uri"]))
+    .ServerCertificateValidationCallback(CertificateValidations.AllowAll)
+    .DefaultIndex(configuration["Elasticsearch:DefaultIndex"])
+    .Authentication(new
+    BasicAuthentication(configuration["Elasticsearch:Username"],
+    configuration["Elasticsearch:Password"]))
+    .DisableDirectStreaming();
+    return new ElasticsearchClient(settings);
+});
 builder.Services.AddScoped<Npgsql.NpgsqlConnection>(_ =>
     new Npgsql.NpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
 
