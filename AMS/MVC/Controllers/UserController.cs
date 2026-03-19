@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Repositories;
 using Repositories.Interfaces;
 using Repositories.Models;
+using Repositories.Services;
 
 namespace MyApp.Namespace
 {
@@ -10,12 +11,16 @@ namespace MyApp.Namespace
     {
         private readonly IWebHostEnvironment _env;
         private readonly IUserInterface _empRepo;
-
-        public UserController(IWebHostEnvironment env, IUserInterface emp)
+        private readonly IRedisUserService _redis;
+        private readonly IRabbitRegistration _rabbit;
+        public UserController(IWebHostEnvironment env, IUserInterface emp ,IRedisUserService redis,IRabbitRegistration rabbit)
         {
             _empRepo = emp;
             // myconfig = confi;
             _env = env;
+            _redis=redis;
+            _rabbit=rabbit;
+
         }
 
         // GET: UserController
@@ -113,9 +118,15 @@ namespace MyApp.Namespace
                 emp.Image = fileName;
             }
             Console.WriteLine("user.c_fname: " + emp.Name);
+
             var status = await _empRepo.RegisterUser(emp);
             if(status == 1)
             {
+                await _redis.SetUserAsync(emp);
+                var cachedUser=await _redis.GetUserAsync(emp.Email??string.Empty);
+            using var connection = await _rabbit.GetConnection();
+
+            await _rabbit.PublishUserRegistrationAsync(connection, emp);
                 return Json(new { success = true, message = "Registration Successful" });
             }
             else if (status == 0)

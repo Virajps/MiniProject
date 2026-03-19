@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.DataProtection;
 using Repositories.Implementations;
 using Repositories.Interfaces;
+using Repositories.Services;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 var dataProtectionPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
@@ -10,6 +12,26 @@ builder.Services.AddScoped<IUserInterface, UserRepository>();
 builder.Services.AddScoped<IEmployeeInterface, EmployeeRepository>();
 builder.Services.AddScoped<IAttendenceInterface, AttendenceRepository>();
 builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
+builder.Services.AddScoped<IRedisUserService, RedisUserService>();
+builder.Services.AddScoped<IRabbitRegistration,RabbitRegistration>();
+builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+    var redisConnectionString = configuration["Redis:ConnectionString"];
+    return ConnectionMultiplexer.Connect(redisConnectionString);
+});
+
+builder.Services.AddSingleton<IDatabase>(provider =>
+{
+    var multiplexer = provider.GetRequiredService<IConnectionMultiplexer>();
+    return multiplexer.GetDatabase();
+});
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = "localhost:6379"; // Redis Server Address
+    //options.InstanceName = "Session_"; // Prefix for session keys in Redis
+});
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath))
     .SetApplicationName("AMS-MVC");
