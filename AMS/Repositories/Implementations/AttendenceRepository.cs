@@ -130,6 +130,41 @@ namespace Repositories.Implementations
             return summary;
         }
 
+        public async Task<List<t_Attendance>> GetAllAttendance()
+        {
+            var list = new List<t_Attendance>();
+
+            try
+            {
+                await _conn.CloseAsync();
+
+                using var cmd = new NpgsqlCommand(
+                @"SELECT a.*, e.c_name FROM t_attendance a
+                LEFT JOIN t_employee e 
+                ON a.c_empid = e.c_empid
+                ORDER BY a.c_attenddate", _conn);
+
+                await _conn.OpenAsync();
+
+                using var r = await cmd.ExecuteReaderAsync();
+
+                while (await r.ReadAsync())
+                {
+                    list.Add(MapRow(r));
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
+
+            return list;
+        }
+
         public async Task<t_Attendance> GetTodayAttendance(int empId)
         {
             t_Attendance? att = null;
@@ -165,7 +200,8 @@ namespace Repositories.Implementations
                 WorkingHour = r["c_workinghour"] == DBNull.Value ? null : Convert.ToInt32(r["c_workinghour"]),
                 AttendStatus = r["c_attendstatus"]?.ToString(),
                 WorkType = r["c_worktype"]?.ToString(),
-                TaskType = r["c_tasktype"]?.ToString()
+                TaskType = r["c_tasktype"]?.ToString(),
+                EmployeeName = r["c_name"]?.ToString()
             };
         }
 
