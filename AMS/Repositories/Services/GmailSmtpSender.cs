@@ -19,7 +19,7 @@ namespace Repositories.Services
     {
       var subject = "Attendance Management System - Registration Successful";
       var loginUrl = "http://localhost:5283/User/Login";
-      var logoUrl = "https://res.cloudinary.com/dku9eh2pw/image/upload/v1773900932/logo_xlhf5r.png";
+      var logoUrl = "https://res.cloudinary.com/dku9eh2pw/image/upload/v1773915524/AMSLogo_bsxqo2.png";
       var body = BuildRegistrationHtml(userName, loginUrl, logoUrl);
 
       ValidateOptions(toEmail, subject, body);
@@ -187,7 +187,7 @@ namespace Repositories.Services
           : "Your Account is Inactive ❌";
 
       var loginUrl = "http://localhost:5283/User/Login";
-      var logoUrl = "https://res.cloudinary.com/dku9eh2pw/image/upload/v1773900932/logo_xlhf5r.png";
+      var logoUrl = "https://res.cloudinary.com/dku9eh2pw/image/upload/v1773915524/AMSLogo_bsxqo2.png";
 
       var body = BuildStatusHtml(userName, loginUrl, logoUrl, isActive);
 
