@@ -8,5 +8,6 @@ namespace Repositories.Interfaces
     public interface IGmailSmtpSenderInterface
     {
         Task Welcome(string toEmail, string userName);
+        Task SendStatusEmail(string toEmail, string userName, bool isActive);
     }
 }
