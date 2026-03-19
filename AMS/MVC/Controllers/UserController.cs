@@ -1,7 +1,9 @@
+using System.Runtime.Intrinsics.Arm;
 using Microsoft.AspNetCore.Mvc;
 using Repositories;
 using Repositories.Interfaces;
 using Repositories.Models;
+using Repositories.Services;
 
 namespace MyApp.Namespace
 {
@@ -10,12 +12,19 @@ namespace MyApp.Namespace
     {
         private readonly IWebHostEnvironment _env;
         private readonly IUserInterface _empRepo;
-
-        public UserController(IWebHostEnvironment env, IUserInterface emp)
+        private readonly IRedisUserService _redis;
+        private readonly IRabbitRegistration _rabbit;
+        private readonly ElasticSearchService _elasticSearch; 
+        private readonly IGmailSmtpSenderInterface _email;
+        public UserController(IWebHostEnvironment env, IUserInterface emp ,IRedisUserService redis,IRabbitRegistration rabbit, IGmailSmtpSenderInterface email, ElasticSearchService elasticSearch)
         {
             _empRepo = emp;
-            // myconfig = confi;
             _env = env;
+            _redis=redis;
+            _rabbit=rabbit;
+
+            _email = email;
+            _elasticSearch = elasticSearch;
         }
 
         // GET: UserController
@@ -43,10 +52,12 @@ namespace MyApp.Namespace
         public async Task<IActionResult> Login(vm_login login)
         {
             t_Employee UserData = await _empRepo.LoginUser(login);
+            t_Attendance attendance = new t_Attendance();
             if (ModelState.IsValid)
             {
                 if (UserData.EmployeeId != 0)
                 {
+                    await _elasticSearch.IndexAttendanceAsync(attendance);
                     HttpContext.Session.SetInt32("EmployeeId", UserData.EmployeeId);
                     HttpContext.Session.SetString("EmployeeName", UserData.Name);
                     HttpContext.Session.SetString("Role", UserData.Role);
@@ -113,9 +124,17 @@ namespace MyApp.Namespace
                 emp.Image = fileName;
             }
             Console.WriteLine("user.c_fname: " + emp.Name);
+
             var status = await _empRepo.RegisterUser(emp);
             if(status == 1)
             {
+                await _redis.SetUserAsync(emp);
+                var cachedUser=await _redis.GetUserAsync(emp.Email??string.Empty);
+            using var connection = await _rabbit.GetConnection();
+
+            await _rabbit.PublishUserRegistrationAsync(connection, emp);
+                await _email.Welcome(toEmail: emp.Email, userName: emp.Name);
+
                 return Json(new { success = true, message = "Registration Successful" });
             }
             else if (status == 0)
