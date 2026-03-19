@@ -11,4 +11,5 @@ public interface IAttendenceInterface
      public Task<List<vm_TaskSummary>> GetAllTaskSummary();
      public Task<List<vm_AttendanceScheduler>> GetAttendanceScheduler(int empId);
      public Task<List<vm_AttendanceScheduler>> GetAttendanceScheduler1(int empId);
+     public Task<List<t_Attendance>> GetAllAttendance();
 }

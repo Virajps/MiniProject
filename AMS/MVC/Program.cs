@@ -1,11 +1,22 @@
+using Elastic.Clients.Elasticsearch;
+using Elastic.Transport;
 using Microsoft.AspNetCore.DataProtection;
 using Repositories.Implementations;
 using Repositories.Interfaces;
+using Repositories.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var dataProtectionPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<ElasticSearchService>();
+
+// for mail
+builder.Services.Configure<Repositories.Models.EmailSettings>(
+    builder.Configuration.GetSection(Repositories.Models.EmailSettings.SectionName));
+builder.Services.AddTransient<Repositories.Interfaces.IGmailSmtpSenderInterface, Repositories.Services.GmailSmtpSender>();
+
+
 builder.Services.AddScoped<IUserInterface, UserRepository>();
 builder.Services.AddScoped<IEmployeeInterface, EmployeeRepository>();
 builder.Services.AddScoped<IAttendenceInterface, AttendenceRepository>();
@@ -20,7 +31,19 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 builder.Services.AddControllers();
-
+builder.Services.AddSingleton(provider =>
+{
+    var configuration = builder.Configuration;
+    var settings = new ElasticsearchClientSettings(new
+    Uri(configuration["Elasticsearch:Uri"]))
+    .ServerCertificateValidationCallback(CertificateValidations.AllowAll)
+    .DefaultIndex(configuration["Elasticsearch:DefaultIndex"])
+    .Authentication(new
+    BasicAuthentication(configuration["Elasticsearch:Username"],
+    configuration["Elasticsearch:Password"]))
+    .DisableDirectStreaming();
+    return new ElasticsearchClient(settings);
+});
 builder.Services.AddScoped<Npgsql.NpgsqlConnection>(_ =>
     new Npgsql.NpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -46,5 +69,35 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=User}/{action=Index}/{id?}");
+
+async Task IndexDataOnStartup()
+{
+    using var scope = app.Services.CreateScope();
+    var AttendRepo = scope.ServiceProvider.GetRequiredService<IAttendenceInterface>();
+    var esService = scope.ServiceProvider.GetRequiredService<ElasticSearchService>();
+    try
+    {
+        await esService.CreateIndexAsync();
+        var attendance = await AttendRepo.GetAllAttendance();
+        if (attendance.Count > 0)
+        {
+            foreach (var Attend in attendance)
+            {
+                await esService.IndexAttendanceAsync(Attend);
+            }
+            Console.WriteLine($" {attendance.Count} attendance indexed successfully in ElasticSearch.");
+        }
+        else
+        {
+            Console.WriteLine(" No attendance found in Database");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($" Error indexing attendance: {ex.Message}");
+    }
+}
+// Run indexing on startup
+await IndexDataOnStartup();
 
 app.Run();
