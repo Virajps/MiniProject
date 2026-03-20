@@ -8,7 +8,7 @@ namespace Repositories.Interfaces
 {
     public interface IAttedanceCacheService
     {
-        Task SetClockInAsync(int employeeId, DateTime clockInTime, string workType, string status);
+        Task SetClockInAsync(int employeeId,string ename, DateTime clockInTime, string workType, string status);
         Task<CacheAttendanceClockIn?> GetClockInAsync(int employeeId);
         Task RemoveClockInAsync(int employeeId);
     }

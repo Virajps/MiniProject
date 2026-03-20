@@ -17,11 +17,12 @@ namespace Repositories.Services
             _database = connectionMultiplexer.GetDatabase();
         }
 
-        public async Task SetClockInAsync(int employeeId, DateTime clockInTime, string workType, string status)
+        public async Task SetClockInAsync(int employeeId,string ename, DateTime clockInTime, string workType, string status)
         {
             var cacheEntry = new CacheAttendanceClockIn
             {
                 EmployeeId = employeeId,
+                EmployeeName=ename,
                 ClockInTime = clockInTime,
                 WorkType = workType,
                 Status = status

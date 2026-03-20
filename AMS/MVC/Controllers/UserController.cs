@@ -135,6 +135,7 @@ namespace MyApp.Namespace
             await _rabbit.PublishUserRegistrationAsync(connection, emp);
                 await _email.Welcome(toEmail: emp.Email, userName: emp.Name);
 
+
                 return Json(new { success = true, message = "Registration Successful" });
             }
             else if (status == 0)
