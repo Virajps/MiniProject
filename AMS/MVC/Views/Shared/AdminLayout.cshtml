@@ -7,201 +7,240 @@
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/lib/kendo/kendo.default-v2.min.css" />
-    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css' />
+    <link rel='stylesheet'
+          href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css' />
 
     <style>
-        :root {
-            --sidebar-width: 250px;
-            --topbar-height: 64px;
-        }
+            :root {
+                --sidebar-width: 250px;
+                --topbar-height: 64px;
+            }
 
-        html, body {
-            height: 100%;
-        }
+            html,
+            body {
+                height: 100%;
+            }
 
-        body {
-            background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-        }
-
-        .admin-sidebar {
-            width: var(--sidebar-width);
-            height: 100vh;
-            top: 0;
-        }
-
-        .admin-topbar {
-            height: var(--topbar-height);
-            z-index: 20;
-        }
-
-        #adminSidebarPanelBar {
-            border: none;
-            background: transparent;
-        }
-
-        #adminSidebarPanelBar .k-link {
-            border-radius: 0.5rem;
-            margin: 0.2rem 0;
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        /* Active sidebar item */
-
-        #adminSidebarPanelBar .k-selected > .k-link,
-        #adminSidebarPanelBar .k-state-selected > .k-link {
-            background: #e0f2fe;
-            color: #1ca7ec;
-        }
-
-        /* Sidebar hover */
-
-        #adminSidebarPanelBar .k-link:hover {
-            background: #f0f9ff;
-            color: #1ca7ec;
-        }
-
-        /* Profile menu */
-
-        #profileMenu {
-            border: none;
-            background: transparent;
-        }
-
-        #profileMenu > .k-item > .k-link {
-            padding: 0;
-            border: none;
-            background: transparent;
-        }
-
-        #profileMenu .k-animation-container {
-            margin-top: 0.5rem;
-        }
-
-        /* Profile icon */
-
-        .profile-trigger {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            border: 2px solid #1ca7ec;
-            background: #e0f2fe;
-            overflow: hidden;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        .profile-trigger img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .profile-trigger .k-icon {
-            color: #1ca7ec;
-        }
-
-        /* Sidebar toggle button */
-
-        #sidebarToggleBtn {
-            display: none;
-            border-color: #1ca7ec;
-            color: #1ca7ec;
-        }
-
-        #sidebarToggleBtn:hover {
-            background: #1ca7ec;
-            color: #fff;
-        }
-
-        /* Profile dropdown colors */
-
-        #profileMenu .k-link {
-            color: #1ca7ec !important;
-        }
-
-        #profileMenu .k-link:hover {
-            color: #0ea5e9 !important;
-        }
-
-        #profileMenu .k-item:hover > .k-link {
-            color: #1ca7ec !important;
-        }
-
-        #profileMenu .k-state-selected > .k-link,
-        #profileMenu .k-selected > .k-link {
-            background: #e0f2fe !important;
-            color: #1ca7ec !important;
-        }
-
-        /* Dropdown buttons */
-
-        #profileMenu .k-button {
-            border-color: #1ca7ec;
-            color: #1ca7ec;
-        }
-
-        #profileMenu .k-button:hover {
-            background: #1ca7ec;
-            color: white;
-        }
-
-        /* Sidebar overlay */
-
-        .sidebar-backdrop {
-            display: none;
-        }
-
-        /* Mobile layout */
-
-        @@media (max-width: 991px) {
+            body {
+                background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+            }
 
             .admin-sidebar {
-                width: min(82vw, 290px);
-                position: fixed !important;
-                top: var(--topbar-height);
-                left: 0;
-                bottom: 0;
-                height: auto;
-                z-index: 45;
-                transform: translateX(-105%);
-                transition: transform 0.25s ease;
-                box-shadow: 8px 0 20px rgba(15, 23, 42, 0.16);
+                width: var(--sidebar-width);
+                height: 100vh;
+                top: 0;
             }
 
-            .admin-shell.sidebar-open .admin-sidebar {
-                transform: translateX(0);
+            .admin-topbar {
+                height: var(--topbar-height);
+                z-index: 20;
             }
+
+            #adminSidebarPanelBar {
+                border: none;
+                background: transparent;
+            }
+
+            #adminSidebarPanelBar .k-link {
+                border-radius: 0.5rem;
+                margin: 0.2rem 0;
+                font-weight: 600;
+                color: #1f2937;
+            }
+
+            /* Active sidebar item */
+
+            #adminSidebarPanelBar .k-selected>.k-link,
+            #adminSidebarPanelBar .k-state-selected>.k-link {
+                background: #e0f2fe;
+                color: #1ca7ec;
+            }
+
+            /* Sidebar hover */
+
+            #adminSidebarPanelBar .k-link:hover {
+                background: #f0f9ff;
+                color: #1ca7ec;
+            }
+
+            /* Profile menu */
+
+            #profileMenu {
+                border: none;
+                background: transparent;
+            }
+
+            #profileMenu>.k-item>.k-link {
+                padding: 0;
+                border: none;
+                background: transparent;
+            }
+
+            #profileMenu .k-animation-container {
+                margin-top: 0.5rem;
+            }
+
+            /* Profile icon */
+
+            .profile-trigger {
+                width: 42px;
+                height: 42px;
+                border-radius: 50%;
+                border: 2px solid #1ca7ec;
+                background: #e0f2fe;
+                overflow: hidden;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            }
+
+            .profile-trigger img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+
+            .profile-trigger .k-icon {
+                color: #1ca7ec;
+            }
+
+            /* Sidebar toggle button */
 
             #sidebarToggleBtn {
-                display: inline-flex;
+                display: none;
+                border-color: #1ca7ec;
+                color: #1ca7ec;
             }
+
+            #sidebarToggleBtn:hover {
+                background: #1ca7ec;
+                color: #fff;
+            }
+
+            /* Profile dropdown colors */
+
+            #profileMenu .k-link {
+                color: #1ca7ec !important;
+            }
+
+            #profileMenu .k-link:hover {
+                color: #0ea5e9 !important;
+            }
+
+            #profileMenu .k-item:hover>.k-link {
+                color: #1ca7ec !important;
+            }
+
+            #profileMenu .k-state-selected>.k-link,
+            #profileMenu .k-selected>.k-link {
+                background: #e0f2fe !important;
+                color: #1ca7ec !important;
+            }
+
+            /* Dropdown buttons */
+
+            #profileMenu .k-button {
+                border-color: #1ca7ec;
+                color: #1ca7ec;
+            }
+
+            #profileMenu .k-button:hover {
+                background: #1ca7ec;
+                color: white;
+            }
+
+            /* Sidebar overlay */
 
             .sidebar-backdrop {
-                display: block;
-                position: fixed;
-                inset: var(--topbar-height) 0 0 0;
-                background: rgba(15, 23, 42, 0.3);
-                opacity: 0;
-                visibility: hidden;
-                transition: opacity 0.25s ease;
-                z-index: 30;
+                display: none;
             }
 
-            .admin-shell.sidebar-open .sidebar-backdrop {
-                opacity: 1;
-                visibility: visible;
-            }
+            @* .bell-icon{
+                border: solid;
+                border-radius: 200% ;
+            } *@
 
-            body.sidebar-open-mobile {
+            .icon{
+                color: #1ca7ec;
+                font-size: 25px;
                 overflow: hidden;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
             }
-        }
+            /* Bell hover animation */
+            .icon i {
+                transition: transform 0.2s ease;
+            }
+
+            .icon:hover i {
+                animation: bellRing 0.6s ease;
+            }
+
+            /* Keyframes for bell swing */
+            @@keyframes bellRing {
+                0%   { transform: rotate(0); }
+                15%  { transform: rotate(15deg); }
+                30%  { transform: rotate(-12deg); }
+                45%  { transform: rotate(10deg); }
+                60%  { transform: rotate(-8deg); }
+                75%  { transform: rotate(5deg); }
+                100% { transform: rotate(0); }
+            }
+
+
+
+            /* Mobile layout */
+
+            @@media (max-width: 991px) {
+
+                .admin-sidebar {
+                    width: min(82vw, 290px);
+                    position: fixed !important;
+                    top: var(--topbar-height);
+                    left: 0;
+                    bottom: 0;
+                    height: auto;
+                    z-index: 45;
+                    transform: translateX(-105%);
+                    transition: transform 0.25s ease;
+                    box-shadow: 8px 0 20px rgba(15, 23, 42, 0.16);
+                }
+
+                .admin-shell.sidebar-open .admin-sidebar {
+                    transform: translateX(0);
+                }
+
+                #sidebarToggleBtn {
+                    display: inline-flex;
+                }
+
+                .sidebar-backdrop {
+                    display: block;
+                    position: fixed;
+                    inset: var(--topbar-height) 0 0 0;
+                    background: rgba(15, 23, 42, 0.3);
+                    opacity: 0;
+                    visibility: hidden;
+                    transition: opacity 0.25s ease;
+                    z-index: 30;
+                }
+
+                .admin-shell.sidebar-open .sidebar-backdrop {
+                    opacity: 1;
+                    visibility: visible;
+                }
+
+                body.sidebar-open-mobile {
+                    overflow: hidden;
+                }
+            }
     </style>
 </head>
+
 <body class="text-dark">
     @{
         var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
@@ -269,30 +308,47 @@
         <div class="sidebar-backdrop d-lg-none"></div>
 
         <div class="admin-main flex-grow-1 d-flex flex-column min-vh-100">
-            <header class="admin-topbar sticky-top bg-white border-bottom px-3 d-flex align-items-center justify-content-between">
+            <header
+                class="admin-topbar sticky-top bg-white border-bottom px-3 d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center">
                     <button id="sidebarToggleBtn" type="button" class="btn btn-outline-secondary btn-sm">Menu</button>
                 </div>
 
-                <ul id="profileMenu" class="ms-auto mb-0">
-                    <li>
-                        <span class="profile-trigger" aria-label="Profile options">
+                <div class="d-flex align-items-center ms-auto gap-3">
+                    <div class="bell-icon ms-auto mb-0" id="bellIcon">
+                        <div class="icon">
+                            <i class="fi fi-rr-bell-notification-social-media"></i>
+                        </div>
+                    </div>
+                    <ul id="profileMenu" class="ms-auto mb-0">
+                        <li>
+                            <span class="profile-trigger" aria-label="Profile options">
                                 <span class="k-icon k-i-user"></span>
-                            @* } *@
-                        </span>
-                        <ul>
-                            <li>
-                                <div class="card border-0 shadow-sm" style="width: 260px;">
-                                    <div class="card-body p-3">
-                                        <p class="mb-0 fw-bold">Admin</p>
-                                        <a id="logoutBtn" href="@Url.Action("Logout", "User")" class="w-100">Logout</a>
+                            </span>
+                            <ul>
+                                <li>
+                                    <div class="card border-0 shadow-sm" style="width: 260px;">
+                                        <div class="card-body p-3">
+                                            <p class="mb-0 fw-bold">Admin</p>
+                                            <a id="logoutBtn" href="@Url.Action("Logout", "User")" class="w-100">Logout</a>
+                                        </div>
                                     </div>
-                                </div>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
             </header>
+            <div id="notificationPopup" style="display:none; width:300px;">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-2" id="notificationList">
+                        <p class="mb-1">✔ Employee John checked in</p>
+                        <p class="mb-1">✔ Report generated</p>
+                        <p class="mb-0">✔ New access granted</p>
+                        
+                    </div>
+                </div>
+            </div>
 
             <main class="p-3">
                 @RenderBody()
@@ -304,56 +360,73 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/lib/kendo/kendo.all.min.js"></script>
     <script>
-        $(function () {
-            var $shell = $(".admin-shell");
-            var $body = $("body");
+            $(function () {
+                var $shell = $(".admin-shell");
+                var $body = $("body");
 
-            $("#adminSidebarPanelBar").kendoPanelBar({
-                expandMode: "single",
-                select: function () {
-                    if (window.matchMedia("(max-width: 991px)").matches) {
+                $("#adminSidebarPanelBar").kendoPanelBar({
+                    expandMode: "single",
+                    select: function () {
+                        if (window.matchMedia("(max-width: 991px)").matches) {
+                            $shell.removeClass("sidebar-open");
+                            $body.removeClass("sidebar-open-mobile");
+                        }
+                    }
+                });
+
+                $("#profileMenu").kendoMenu({
+                    orientation: "horizontal",
+                    openOnClick: false,
+                    hoverDelay: 60
+                });
+
+                $("#sidebarToggleBtn").kendoButton({
+                    icon: "menu"
+                });
+
+                $("#sidebarToggleBtn").on("click", function () {
+                    $shell.toggleClass("sidebar-open");
+                    $body.toggleClass("sidebar-open-mobile", $shell.hasClass("sidebar-open"));
+                });
+
+                $("#viewProfileBtn").kendoButton({
+                    icon: "user"
+                });
+
+                $("#logoutBtn").kendoButton({
+                    icon: "logout"
+                });
+
+                $(".sidebar-backdrop").on("click", function () {
+                    $shell.removeClass("sidebar-open");
+                    $body.removeClass("sidebar-open-mobile");
+                });
+
+                $(function () {
+                    var popup = $("#notificationPopup").kendoPopup({
+                        anchor: $("#bellIcon"),
+                        origin: "bottom right",
+                        position: "top right"
+                    }).data("kendoPopup");
+                    $("#bellIcon").on("click", function (e) {
+                        e.stopPropagation();
+                        popup.toggle();
+                    });
+                    // Close when clicking outside
+                    $(document).on("click", function () {
+                        popup.close();
+                    });
+                });
+
+                $(window).on("resize", function () {
+                    if (!window.matchMedia("(max-width: 991px)").matches) {
                         $shell.removeClass("sidebar-open");
                         $body.removeClass("sidebar-open-mobile");
                     }
-                }
+                });
             });
-
-            $("#profileMenu").kendoMenu({
-                orientation: "horizontal",
-                openOnClick: false,
-                hoverDelay: 60
-            });
-
-            $("#sidebarToggleBtn").kendoButton({
-                icon: "menu"
-            });
-
-            $("#sidebarToggleBtn").on("click", function () {
-                $shell.toggleClass("sidebar-open");
-                $body.toggleClass("sidebar-open-mobile", $shell.hasClass("sidebar-open"));
-            });
-
-            $("#viewProfileBtn").kendoButton({
-                icon: "user"
-            });
-
-            $("#logoutBtn").kendoButton({
-                icon: "logout"
-            });
-
-            $(".sidebar-backdrop").on("click", function () {
-                $shell.removeClass("sidebar-open");
-                $body.removeClass("sidebar-open-mobile");
-            });
-
-            $(window).on("resize", function () {
-                if (!window.matchMedia("(max-width: 991px)").matches) {
-                    $shell.removeClass("sidebar-open");
-                    $body.removeClass("sidebar-open-mobile");
-                }
-            });
-        });
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
+
 </html>
