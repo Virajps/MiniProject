@@ -131,5 +131,47 @@ namespace Repositories.Implementations
                 await _conn.CloseAsync();
             }
         }
+
+        public async Task<t_Employee?> GetUserByEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return null;
+
+            const string qry = @"SELECT c_empid, c_name, c_email, c_role, c_image, c_status
+                                 FROM t_employee
+                                 WHERE c_email = @c_email";
+
+            try
+            {
+                using var cmd = new NpgsqlCommand(qry, _conn);
+                cmd.Parameters.AddWithValue("@c_email", email);
+
+                await _conn.OpenAsync();
+                using var reader = await cmd.ExecuteReaderAsync();
+
+                if (await reader.ReadAsync())
+                {
+                    return new t_Employee
+                    {
+                        EmployeeId = reader.GetInt32(reader.GetOrdinal("c_empid")),
+                        Name = reader["c_name"]?.ToString(),
+                        Email = reader["c_email"]?.ToString(),
+                        Role = reader["c_role"]?.ToString(),
+                        Image = reader["c_image"]?.ToString(),
+                        Status = reader["c_status"]?.ToString()
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("GetUserByEmail Error: " + ex.Message);
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
+
+            return null;
+        }
     }
 }

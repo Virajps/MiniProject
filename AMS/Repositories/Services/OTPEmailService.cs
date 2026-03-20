@@ -1,108 +1,75 @@
-﻿using System.Net;
-using System.Net.Mail;
-using Microsoft.Extensions.Configuration;
-using System.Text;
+﻿using Repositories.Interfaces;
+using Repositories.Models;
 
-namespace Repositories;
-
-public class OTPEmailService
+namespace Repositories.Services
 {
-  private readonly IConfiguration _config;
-
-  public OTPEmailService(IConfiguration config)
+  public class OTPEmailService
   {
-    _config = config;
-  }
+    private readonly IRedisUserService _redis;
+    private readonly IUserInterface _repo;
+    private readonly IGmailSmtpSenderInterface _email;
 
-  public async Task SendOTPEmail(string toEmail, string otp)
-  {
-    var smtp = _config["EmailSettings:SmtpServer"];
-    var port = int.Parse(_config["EmailSettings:Port"]);
-    var senderEmail = _config["EmailSettings:SenderEmail"];
-    var password = _config["EmailSettings:SenderPassword"];
-    var senderName = _config["EmailSettings:SenderName"];
-
-    // ✅ Build HTML Body
-    var body = BuildOtpHtml(otp);
-
-    using var message = new MailMessage
+    public OTPEmailService(
+        IRedisUserService redis,
+        IUserInterface repo,
+        IGmailSmtpSenderInterface email)
     {
-      From = new MailAddress(senderEmail, senderName),
-      Subject = "Password Reset OTP 🔐",
-      Body = body,
-      IsBodyHtml = true,
-      BodyEncoding = Encoding.UTF8,
-      SubjectEncoding = Encoding.UTF8
-    };
+      _redis = redis;
+      _repo = repo;
+      _email = email;
+    }
 
-    message.To.Add(toEmail);
-
-    using var client = new SmtpClient(smtp, port)
+    // ✅ STEP 1: SEND OTP
+    public async Task<bool> SendOTP(string email, string userName)
     {
-      Credentials = new NetworkCredential(senderEmail, password),
-      EnableSsl = true,
-      UseDefaultCredentials = false,
-      DeliveryMethod = SmtpDeliveryMethod.Network
-    };
+      var otp = new Random().Next(100000, 999999).ToString();
 
-    await client.SendMailAsync(message);
-  }
+      // Save in Redis
+      await _redis.SetOTP(email, otp);
+      await _redis.RemoveOtpVerified(email);
 
-  // ✅ HTML TEMPLATE (Professional UI)
-  private string BuildOtpHtml(string otp)
-  {
-    return $@"
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset='UTF-8'>
-</head>
+      // Send Email
+      await _email.SendOtpEmail(email, userName, otp);
 
-<body style='margin:0;padding:0;background:#f4f6f9;font-family:Arial'>
+      return true;
+    }
 
-<table width='100%' style='padding:30px 10px'>
-<tr>
-<td align='center'>
+    // ✅ STEP 2: VERIFY OTP
+    public async Task<bool> VerifyOTP(string email, string otp)
+    {
+      var storedOtp = await _redis.GetOTP(email);
 
-<table width='100%' style='max-width:600px;background:#fff;border-radius:10px;border:1px solid #ddd'>
+      if (storedOtp == null)
+        return false;
 
-<tr>
-<td style='background:#4CAF50;padding:20px;text-align:center;color:white'>
-<h2>Attendance Management System</h2>
-</td>
-</tr>
+      if (storedOtp == otp)
+      {
+        await _redis.SetOtpVerified(email);
+        return true;
+      }
 
-<tr>
-<td style='padding:30px;text-align:center'>
+      return false;
+    }
 
-<h3>Password Reset OTP</h3>
+    // ✅ STEP 3: RESET PASSWORD
+    public async Task<bool> ResetPassword(string email, string password)
+    {
+      var isVerified = await _redis.IsOtpVerified(email);
+      if (!isVerified)
+      {
+        return false;
+      }
 
-<p>Your OTP is:</p>
+      var result = await _repo.UpdatePassword(email, password);
 
-<div style='font-size:30px;font-weight:bold;color:#4CAF50;margin:20px 0'>
-{otp}
-</div>
+      if (result)
+      {
+        await _redis.RemoveOTP(email);
+        await _redis.RemoveOtpVerified(email);
+        return true;
+      }
 
-<p>This OTP is valid for <b>5 minutes</b></p>
-
-<p style='color:#888'>If you didn't request this, ignore this email.</p>
-
-</td>
-</tr>
-
-<tr>
-<td style='background:#f1f1f1;text-align:center;padding:15px;font-size:12px;color:#777'>
-© 2026 AMS | Surat
-</td>
-</tr>
-
-</table>
-
-</td>
-</tr>
-</table>
-
-</body>
-</html>";
+      return false;
+    }
   }
 }

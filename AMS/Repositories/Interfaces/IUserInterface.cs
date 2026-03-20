@@ -8,5 +8,6 @@ namespace Repositories.Interfaces
 
         public Task<int> RegisterUser(t_Employee employee);
         Task<bool> UpdatePassword(string email, string password);
+        Task<t_Employee?> GetUserByEmail(string email);
     }
 }
