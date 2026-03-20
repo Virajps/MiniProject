@@ -5,6 +5,7 @@ using Repositories;
 using Repositories.Implementations;
 using Repositories.Interfaces;
 using Repositories.Models;
+using Repositories.Services;
 
 namespace MyApp.Namespace
 {
@@ -18,12 +19,18 @@ namespace MyApp.Namespace
         private readonly IAttendenceInterface _repo;
         private readonly IWebHostEnvironment _env;
         private readonly IEmployeeInterface _employee;
+        private readonly ElasticSearchService _elasticSearchService;
         // GET: EmployeeController
-        public EmployeeController(IWebHostEnvironment env, IEmployeeInterface employee, IAttendenceInterface repo)
+        public EmployeeController(
+            IWebHostEnvironment env,
+            IEmployeeInterface employee,
+            IAttendenceInterface repo,
+            ElasticSearchService elasticSearchService)
         {
             _env = env;
             _employee = employee;
             _repo = repo;
+            _elasticSearchService = elasticSearchService;
         }
 
         public ActionResult Index()
@@ -337,7 +344,8 @@ namespace MyApp.Namespace
                     date = DateTime.Today;
                 }
 
-                var data = await _repo.GetAttendanceChart(empId.Value, type.ToLowerInvariant(), date);
+                // var data = await _repo.GetAttendanceChart(empId.Value, type.ToLowerInvariant(), date);
+                var data = await _elasticSearchService.GetAttendanceChartAsync(empId.Value, type.ToLowerInvariant(), date);
 
                 if (data != null)
                 {
@@ -367,8 +375,9 @@ namespace MyApp.Namespace
                 }
 
                 // Return all-time total hours till now.
-                var attendance = await _repo.GetAttendanceScheduler1(empId.Value);
-                int totalHours = attendance?.Sum(x => x.WorkingHour) ?? 0;
+                // var attendance = await _repo.GetAttendanceScheduler1(empId.Value);
+                // int totalHours = attendance?.Sum(x => x.WorkingHour) ?? 0;
+                int totalHours = await _elasticSearchService.GetTotalWorkingHoursAsync(empId.Value);
 
                 return Ok(new
                 {
@@ -397,7 +406,8 @@ namespace MyApp.Namespace
                 var effectiveType = string.IsNullOrWhiteSpace(type) ? "week" : type.ToLowerInvariant();
                 var effectiveDate = date ?? DateTime.Today;
 
-                var data = await _repo.GetEmployeeTaskSummary(empId.Value, effectiveType, effectiveDate);
+                // var data = await _repo.GetEmployeeTaskSummary(empId.Value, effectiveType, effectiveDate);
+                var data = await _elasticSearchService.GetEmployeeTaskSummaryAsync(empId.Value, effectiveType, effectiveDate);
                 return Ok(new { success = true, data = data ?? new List<vm_TaskSummary>() });
             }
         }
