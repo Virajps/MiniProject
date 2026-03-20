@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Repositories.Interfaces;
 using Repositories.Models;
+using Repositories.Services;
 
 namespace MyApp.Namespace
 {
@@ -12,14 +13,22 @@ namespace MyApp.Namespace
         private readonly IEmployeeInterface _employee;
         private readonly IGmailSmtpSenderInterface _email;
         private readonly IDashboardRepository _dashboardRepository;
+        private readonly ElasticSearchService _elasticSearchService;
 
-        public AdminController(IWebHostEnvironment env, IEmployeeInterface employee, IAttendenceInterface repo, IDashboardRepository dashboardRepository, IGmailSmtpSenderInterface email)
+        public AdminController(
+            IWebHostEnvironment env,
+            IEmployeeInterface employee,
+            IAttendenceInterface repo,
+            IDashboardRepository dashboardRepository,
+            IGmailSmtpSenderInterface email,
+            ElasticSearchService elasticSearchService)
         {
             _env = env;
             _employee = employee;
             _repo = repo;
             _dashboardRepository = dashboardRepository;
             _email = email;
+            _elasticSearchService = elasticSearchService;
         }
         // GET: AdminController
         public ActionResult Index()
@@ -162,9 +171,88 @@ namespace MyApp.Namespace
             }
             else
             {
-                var data = await _dashboardRepository.GetEmployeeProgress(empId, month, year);
+                // var data = await _dashboardRepository.GetEmployeeProgress(empId, month, year);
+                var data = await _elasticSearchService.GetMonthlyReportAsync(empId, month, year);
                 return Json(data);
             }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> FilterEmployees(
+            int? employeeId,
+            string? employeeName,
+            string? employeeStatus,
+            string? workType,
+            string? taskType,
+            string? attendStatus,
+            int? month,
+            int? year,
+            DateTime? fromDate,
+            DateTime? toDate)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+            {
+                return RedirectToAction("Unauthorized", "User");
+            }
+
+            var data = await _elasticSearchService.FilterEmployeesAsync(new EmployeeFilterRequest
+            {
+                EmployeeId = employeeId,
+                EmployeeName = employeeName,
+                EmployeeStatus = employeeStatus,
+                WorkType = workType,
+                TaskType = taskType,
+                AttendStatus = attendStatus,
+                Month = month,
+                Year = year,
+                FromDate = fromDate,
+                ToDate = toDate
+            });
+
+            return Ok(new { success = true, data });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetWorkTypeAnalysis(int? employeeId, int? month, int? year, DateTime? fromDate, DateTime? toDate)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+            {
+                return RedirectToAction("Unauthorized", "User");
+            }
+
+            var data = await _elasticSearchService.GetWorkTypeAnalysisAsync(new AttendanceAnalysisRequest
+            {
+                EmployeeId = employeeId,
+                Month = month,
+                Year = year,
+                FromDate = fromDate,
+                ToDate = toDate
+            });
+
+            return Ok(new { success = true, data });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTaskTypeAnalysis(int? employeeId, int? month, int? year, DateTime? fromDate, DateTime? toDate)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+            {
+                return RedirectToAction("Unauthorized", "User");
+            }
+
+            var data = await _elasticSearchService.GetTaskTypeAnalysisAsync(new AttendanceAnalysisRequest
+            {
+                EmployeeId = employeeId,
+                Month = month,
+                Year = year,
+                FromDate = fromDate,
+                ToDate = toDate
+            });
+
+            return Ok(new { success = true, data });
         }
     }
 }
