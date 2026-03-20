@@ -9,6 +9,7 @@ namespace Repositories.Services
     {
         public int EmployeeId { get; set; }
         public DateTime ClockInTime { get; set; }
+        public string EmployeeName { get; set; }
         public string WorkType { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;   
     }

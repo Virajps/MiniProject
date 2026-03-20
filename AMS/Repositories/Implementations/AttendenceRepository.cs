@@ -10,14 +10,16 @@ namespace Repositories.Implementations
     {
         private readonly NpgsqlConnection _conn;
         private readonly IAttedanceCacheService _attendanceCacheService;
+        private readonly IEmployeeInterface _employee;
         private const int ClockInHourLimit = 9;
         private const int ClockInMinLimit = 15;
         private const int ClockOutHourLimit = 17;
         private const int ClockOutMinLimit = 0;
-        public AttendenceRepository(NpgsqlConnection conn, IAttedanceCacheService attedanceCacheService)
+        public AttendenceRepository(NpgsqlConnection conn, IAttedanceCacheService attedanceCacheService,IEmployeeInterface employee)
         {
             _conn = conn;
             _attendanceCacheService = attedanceCacheService;
+            _employee=employee;
         }
         public async Task<List<vm_TaskSummary>> GetEmployeeTaskSummary(int EmployeeId, string type, DateTime date)
         {
@@ -174,17 +176,26 @@ namespace Repositories.Implementations
             {
                 await _conn.CloseAsync();
                 using var cmd = new NpgsqlCommand(
-                    "SELECT * FROM t_attendance WHERE c_empid=@id AND c_attenddate=@today", _conn);
+                        @"SELECT a.*, e.c_name 
+                        FROM t_attendance a
+                        LEFT JOIN t_employee e 
+                        ON a.c_empid = e.c_empid
+                        WHERE a.c_empid = @id 
+                        AND a.c_attenddate = @today", _conn);
                 cmd.Parameters.AddWithValue("@id", empId);
                 cmd.Parameters.AddWithValue("@today", DateOnly.FromDateTime(DateTime.Today));
                 await _conn.OpenAsync();
                 using var r = await cmd.ExecuteReaderAsync();
                 if (await r.ReadAsync()) att = MapRow(r);
             }
-            catch (Exception ex) { Console.WriteLine(ex.Message); }
+            catch (Exception ex) { 
+                Console.WriteLine("get atten"+ex.Message);
+            }
             finally { await _conn.CloseAsync(); }
             return att;
         }
+
+
 
         private static t_Attendance MapRow(NpgsqlDataReader r)
         {
@@ -345,7 +356,6 @@ namespace Repositories.Implementations
         {
             try
             {
-                // Prevent double clock-in
                 var existing = await GetTodayAttendance(empId);
                 if (existing != null) return 0;
 
@@ -354,20 +364,11 @@ namespace Repositories.Implementations
 
                 var now = DateTime.Now;
                 var status = IsLateIn(now.Hour, now.Minute) ? "LateIn" : "Regular";
-                await _attendanceCacheService.SetClockInAsync(empId, now, workType, status);
-    //---------------------Old Codes ------------------
-                // await _conn.CloseAsync();
-                // using var cmd = new NpgsqlCommand(
-                //     @"INSERT INTO t_attendance (c_empid, c_attenddate, c_clockinhour, c_clockinmin, c_attendstatus, c_worktype)
-                //       VALUES (@empid, @date, @hour, @min, @status, @wtype)", _conn);
-                // cmd.Parameters.AddWithValue("@empid", empId);
-                // cmd.Parameters.AddWithValue("@date", DateOnly.FromDateTime(DateTime.Today));
-                // cmd.Parameters.AddWithValue("@hour", now.Hour);
-                // cmd.Parameters.AddWithValue("@min", now.Minute);
-                // cmd.Parameters.AddWithValue("@status", status);
-                // cmd.Parameters.AddWithValue("@wtype", workType);
-                // await _conn.OpenAsync();
-                // await cmd.ExecuteNonQueryAsync();
+
+                var data = await _employee.GetUserById(empId);
+                var ename = data.Name;
+
+                await _attendanceCacheService.SetClockInAsync(empId,ename, now, workType, status);
                 return 1;
             }
             catch (Exception ex) { Console.WriteLine("ClockIn Error: " + ex.Message); return -1; }

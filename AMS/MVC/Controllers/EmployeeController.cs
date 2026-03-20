@@ -6,6 +6,8 @@ using Repositories.Implementations;
 using Repositories.Interfaces;
 using Repositories.Models;
 using Repositories.Services;
+using Microsoft.Extensions.DependencyInjection;
+
 
 namespace MyApp.Namespace
 {
@@ -67,7 +69,29 @@ namespace MyApp.Namespace
                 var result = await _repo.ClockIn(empId.Value, workType);
 
                 if (result == 1)
+                {
+                    var attendanceCacheService = HttpContext.RequestServices.GetRequiredService<IAttedanceCacheService>();
+                    var employeeName = HttpContext.Session.GetString("EmployeeName");
+                    await attendanceCacheService.SetEmployeeNameAsync(empId.Value, employeeName ?? string.Empty);
+                    var cachedClockIn = await attendanceCacheService.GetClockInAsync(empId.Value);
+                    if (cachedClockIn != null)
+                    {
+                        await attendanceCacheService.SetClockInAsync(
+                            empId.Value,
+                            employeeName ?? string.Empty,
+                            cachedClockIn.ClockInTime,
+                            cachedClockIn.WorkType,
+                            cachedClockIn.Status);
+                    }
+                    var rabbitService = HttpContext.RequestServices.GetRequiredService<IRabbitRegistration>();
+                    await using var rabbitConnection = await rabbitService.GetConnection();
+                    await rabbitService.PublishAttendanceEventAsync(rabbitConnection, empId.Value, "ClockIn", new
+                    {
+                        WorkType = workType,
+                        ClockInTime = DateTime.UtcNow
+                    });
                     return Ok(new { success = true, message = "Clock-In successful" });
+                }
 
                 if (result == 0)
                     return Ok(new { success = false, message = "Already clocked in today" });
@@ -94,7 +118,19 @@ namespace MyApp.Namespace
                 var result = await _repo.ClockOut(empId.Value, taskTypes);
 
                 if (result == 1)
+                {
+                    var attendanceCacheService = HttpContext.RequestServices.GetRequiredService<IAttedanceCacheService>();
+                    var employeeName = HttpContext.Session.GetString("EmployeeName");
+                    await attendanceCacheService.SetEmployeeNameAsync(empId.Value, employeeName ?? string.Empty);
+                    var rabbitService = HttpContext.RequestServices.GetRequiredService<IRabbitRegistration>();
+                    await using var rabbitConnection = await rabbitService.GetConnection();
+                    await rabbitService.PublishAttendanceEventAsync(rabbitConnection, empId.Value, "ClockOut", new
+                    {
+                        TaskTypes = taskTypes,
+                        ClockOutTime = DateTime.UtcNow
+                    });
                     return Ok(new { success = true, message = "Clock-Out successful" });
+                }
 
                 if (result == -2)
                     return Ok(new { success = false, message = "Already clocked out today" });
