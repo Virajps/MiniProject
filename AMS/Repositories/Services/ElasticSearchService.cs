@@ -213,6 +213,14 @@ namespace Repositories.Services
             return report;
         }
 
+        public async Task<int> GetTotalWorkingHoursAsync(int empId)
+        {
+            var documents = await SearchAttendanceByDateAsync(null, null, null, null);
+            return documents
+                .Where(x => x.EmpId == empId)
+                .Sum(x => x.WorkingHour);
+        }
+
         public async Task<List<EmployeeFilterResult>> FilterEmployeesAsync(EmployeeFilterRequest request)
         {
             var documents = await SearchAttendanceByDateAsync(request.FromDate, request.ToDate, request.Month, request.Year);
