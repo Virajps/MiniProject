@@ -57,6 +57,7 @@ namespace MyApp.Namespace
             {
                 if (UserData.EmployeeId != 0)
                 {
+                    await _redis.SetUserAsync(UserData);
                     await _elasticSearch.IndexAttendanceAsync(attendance);
                     HttpContext.Session.SetInt32("EmployeeId", UserData.EmployeeId);
                     HttpContext.Session.SetString("EmployeeName", UserData.Name);
@@ -134,6 +135,7 @@ namespace MyApp.Namespace
 
             await _rabbit.PublishUserRegistrationAsync(connection, emp);
                 await _email.Welcome(toEmail: emp.Email, userName: emp.Name);
+
 
                 return Json(new { success = true, message = "Registration Successful" });
             }

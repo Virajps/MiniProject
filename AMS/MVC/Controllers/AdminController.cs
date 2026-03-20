@@ -14,6 +14,7 @@ namespace MyApp.Namespace
         private readonly IGmailSmtpSenderInterface _email;
         private readonly IDashboardRepository _dashboardRepository;
         private readonly ElasticSearchService _elasticSearchService;
+        private readonly IRabbitRegistration _rabbitRegistration;
 
         public AdminController(
             IWebHostEnvironment env,
@@ -21,7 +22,8 @@ namespace MyApp.Namespace
             IAttendenceInterface repo,
             IDashboardRepository dashboardRepository,
             IGmailSmtpSenderInterface email,
-            ElasticSearchService elasticSearchService)
+            ElasticSearchService elasticSearchService,
+            IRabbitRegistration rabbitRegistration)
         {
             _env = env;
             _employee = employee;
@@ -29,6 +31,7 @@ namespace MyApp.Namespace
             _dashboardRepository = dashboardRepository;
             _email = email;
             _elasticSearchService = elasticSearchService;
+            _rabbitRegistration=rabbitRegistration;
         }
         // GET: AdminController
         public ActionResult Index()
@@ -254,5 +257,45 @@ namespace MyApp.Namespace
 
             return Ok(new { success = true, data });
         }
+
+//---------------Get Queue Messages----------------------//
+        [HttpGet]
+        public async Task<IActionResult> GetQueueMessages()
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+            {
+                return RedirectToAction("Unauthorized", "User");
+            }
+
+            var registrationMessages = await _rabbitRegistration.GetRegistrationNotificationsAsync();
+            var attendanceMessages = await _rabbitRegistration.GetAttendanceNotificationsAsync();
+
+            return Ok(new
+            {
+                success = true,
+                registrationMessages,
+                attendanceMessages
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RemoveQueueMessage(string notificationId)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+            {
+                return RedirectToAction("Unauthorized", "User");
+            }
+
+            var removed = await _rabbitRegistration.RemoveNotificationAsync(notificationId);
+            return Ok(new { success = removed });
+        }
     }
 }
+    
+
+
+
+
+    
