@@ -10,14 +10,16 @@ namespace MyApp.Namespace
         private readonly IAttendenceInterface _repo;
         private readonly IWebHostEnvironment _env;
         private readonly IEmployeeInterface _employee;
+        private readonly IGmailSmtpSenderInterface _email;
         private readonly IDashboardRepository _dashboardRepository;
 
-        public AdminController(IWebHostEnvironment env, IEmployeeInterface employee, IAttendenceInterface repo, IDashboardRepository dashboardRepository)
+        public AdminController(IWebHostEnvironment env, IEmployeeInterface employee, IAttendenceInterface repo, IDashboardRepository dashboardRepository, IGmailSmtpSenderInterface email)
         {
             _env = env;
             _employee = employee;
             _repo = repo;
             _dashboardRepository = dashboardRepository;
+            _email = email;
         }
         // GET: AdminController
         public ActionResult Index()
@@ -28,11 +30,12 @@ namespace MyApp.Namespace
         public async Task<IActionResult> Dashboard()
         {
             var role = HttpContext.Session.GetString("Role");
-            if(role != "Admin")
+            if (role != "Admin")
             {
-                return RedirectToAction("Unauthorized","User");
+                return RedirectToAction("Unauthorized", "User");
             }
-            else{
+            else
+            {
                 var data = _dashboardRepository.GetDashboardData();
                 return View(data);
             }
@@ -42,11 +45,12 @@ namespace MyApp.Namespace
         public async Task<IActionResult> History()
         {
             var role = HttpContext.Session.GetString("Role");
-            if(role != "Admin")
+            if (role != "Admin")
             {
-                return RedirectToAction("Unauthorized","User");
+                return RedirectToAction("Unauthorized", "User");
             }
-            else{
+            else
+            {
                 return View();
             }
         }
@@ -55,9 +59,9 @@ namespace MyApp.Namespace
         public async Task<IActionResult> GetAttendanceScheduler(int empId)
         {
             var role = HttpContext.Session.GetString("Role");
-            if(role != "Admin")
+            if (role != "Admin")
             {
-                return RedirectToAction("Unauthorized","User");
+                return RedirectToAction("Unauthorized", "User");
             }
             else
             {
@@ -70,9 +74,9 @@ namespace MyApp.Namespace
         public async Task<IActionResult> UpdateUserStatus(int EmployeeId, string Status)
         {
             var role = HttpContext.Session.GetString("Role");
-            if(role != "Admin")
+            if (role != "Admin")
             {
-                return RedirectToAction("Unauthorized","User");
+                return RedirectToAction("Unauthorized", "User");
             }
             else
             {
@@ -82,6 +86,20 @@ namespace MyApp.Namespace
 
                 if (result)
                 {
+                    var data = await _employee.GetUserById(EmployeeId);
+                    var email = data.Email;
+                    var name = data.Name;
+                    bool active;
+                    if (Status == "Active")
+                    {
+                        active = true;
+                    }
+                    else
+                    {
+                        active = false;
+                    }
+                    await _email.SendStatusEmail(email, name, active);
+
                     return Ok(new { success = true, message = "Status updated successfully" });
                 }
                 else
@@ -95,9 +113,9 @@ namespace MyApp.Namespace
         public async Task<IActionResult> AccessControl()
         {
             var role = HttpContext.Session.GetString("Role");
-            if(role != "Admin")
+            if (role != "Admin")
             {
-                return RedirectToAction("Unauthorized","User");
+                return RedirectToAction("Unauthorized", "User");
             }
             else
             {
@@ -109,12 +127,12 @@ namespace MyApp.Namespace
         public async Task<IActionResult> AccessControlData()
         {
             var role = HttpContext.Session.GetString("Role");
-            if(role != "Admin")
+            if (role != "Admin")
             {
-                return RedirectToAction("Unauthorized","User");
+                return RedirectToAction("Unauthorized", "User");
             }
             else
-            {   
+            {
                 var result = await _dashboardRepository.GetAllUsersForAccess();
                 return Ok(new { success = true, data = result });
             }
@@ -124,27 +142,27 @@ namespace MyApp.Namespace
         public IActionResult ProgressReport()
         {
             var role = HttpContext.Session.GetString("Role");
-            if(role != "Admin")
+            if (role != "Admin")
             {
-                return RedirectToAction("Unauthorized","User");
+                return RedirectToAction("Unauthorized", "User");
             }
             else
-            {  
+            {
                 return View();
             }
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetEmployeeProgress(int empId,int month,int year)
+        public async Task<IActionResult> GetEmployeeProgress(int empId, int month, int year)
         {
             var role = HttpContext.Session.GetString("Role");
-            if(role != "Admin")
+            if (role != "Admin")
             {
-                return RedirectToAction("Unauthorized","User");
+                return RedirectToAction("Unauthorized", "User");
             }
             else
-            { 
-                var data = await _dashboardRepository.GetEmployeeProgress(empId,month,year);
+            {
+                var data = await _dashboardRepository.GetEmployeeProgress(empId, month, year);
                 return Json(data);
             }
         }
