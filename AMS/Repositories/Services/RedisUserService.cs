@@ -8,7 +8,7 @@ using Repositories.Services;
 using StackExchange.Redis;
 namespace Repositories.Services
 {
-    public class RedisUserService:IRedisUserService
+    public class RedisUserService : IRedisUserService
     {
         private readonly IDatabase _database;
 
@@ -77,10 +77,35 @@ namespace Repositories.Services
         {
             return $"user:{email.Trim().ToLowerInvariant()}";
         }
-
-        private static string GetEmployeeIdRedisKey(int employeeId)
+        public async Task SetOTP(string email, string otp)
         {
-            return $"user:id:{employeeId}";
+            await _database.StringSetAsync($"OTP_{email}", otp, TimeSpan.FromMinutes(5));
+        }
+
+        public async Task<string> GetOTP(string email)
+        {
+            return await _database.StringGetAsync($"OTP_{email}");
+        }
+
+        public async Task RemoveOTP(string email)
+        {
+            await _database.KeyDeleteAsync($"OTP_{email}");
+        }
+
+        public async Task SetOtpVerified(string email)
+        {
+            await _database.StringSetAsync($"OTP_VERIFIED_{email}", "1", TimeSpan.FromMinutes(10));
+        }
+
+        public async Task<bool> IsOtpVerified(string email)
+        {
+            var value = await _database.StringGetAsync($"OTP_VERIFIED_{email}");
+            return !value.IsNullOrEmpty;
+        }
+
+        public async Task RemoveOtpVerified(string email)
+        {
+            await _database.KeyDeleteAsync($"OTP_VERIFIED_{email}");
         }
     }
 }
