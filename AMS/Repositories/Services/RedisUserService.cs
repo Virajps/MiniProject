@@ -57,9 +57,30 @@ namespace Repositories.Services
             return JsonSerializer.Deserialize<t_Employee>(redisValue!);
         }
 
+       public async Task<t_Employee?> GetUserByIdAsync(int employeeId)
+        {
+            if (employeeId <= 0)
+            {
+                return null;
+            }
+
+            var redisValue = await _database.StringGetAsync(GetEmployeeIdRedisKey(employeeId));
+            if (redisValue.IsNullOrEmpty)
+            {
+                return null;
+            }
+
+            return JsonSerializer.Deserialize<t_Employee>(redisValue!);
+        }
+
         private static string GetRedisKey(string email)
         {
             return $"user:{email.Trim().ToLowerInvariant()}";
+        }
+
+        private static string GetEmployeeIdRedisKey(int employeeId)
+        {
+            return $"user:id:{employeeId}";
         }
     }
 }

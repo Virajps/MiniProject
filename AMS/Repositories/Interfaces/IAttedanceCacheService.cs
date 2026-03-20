@@ -11,5 +11,7 @@ namespace Repositories.Interfaces
         Task SetClockInAsync(int employeeId,string ename, DateTime clockInTime, string workType, string status);
         Task<CacheAttendanceClockIn?> GetClockInAsync(int employeeId);
         Task RemoveClockInAsync(int employeeId);
+        Task SetEmployeeNameAsync(int employeeId, string employeeName);
+        Task<string?> GetEmployeeNameAsync(int employeeId);
     }
 }

@@ -54,6 +54,33 @@ namespace Repositories.Services
         {
             return $"attendance:clockin:{employeeId}";
         }
+
+        private static string GetEmployeeNameKey(int employeeId)
+        {
+            return $"attendance:employee:name:{employeeId}";
+        }
+        public async Task SetEmployeeNameAsync(int employeeId, string employeeName)
+        {
+            if (employeeId <= 0 || string.IsNullOrWhiteSpace(employeeName))
+            {
+                return;
+            }
+
+            await _database.StringSetAsync(
+                GetEmployeeNameKey(employeeId),
+                employeeName.Trim(),
+                TimeSpan.FromDays(1));
+        }
+        public async Task<string?> GetEmployeeNameAsync(int employeeId)
+        {
+            if (employeeId <= 0)
+            {
+                return null;
+            }
+
+            var cachedValue = await _database.StringGetAsync(GetEmployeeNameKey(employeeId));
+            return cachedValue.IsNullOrEmpty ? null : cachedValue.ToString();
+        }
     }
 }
 

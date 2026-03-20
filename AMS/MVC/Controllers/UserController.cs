@@ -57,6 +57,7 @@ namespace MyApp.Namespace
             {
                 if (UserData.EmployeeId != 0)
                 {
+                    await _redis.SetUserAsync(UserData);
                     await _elasticSearch.IndexAttendanceAsync(attendance);
                     HttpContext.Session.SetInt32("EmployeeId", UserData.EmployeeId);
                     HttpContext.Session.SetString("EmployeeName", UserData.Name);

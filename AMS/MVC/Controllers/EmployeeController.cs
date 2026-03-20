@@ -68,8 +68,21 @@ namespace MyApp.Namespace
 
                 var result = await _repo.ClockIn(empId.Value, workType);
 
-                 if (result == 1)
+                if (result == 1)
                 {
+                    var attendanceCacheService = HttpContext.RequestServices.GetRequiredService<IAttedanceCacheService>();
+                    var employeeName = HttpContext.Session.GetString("EmployeeName");
+                    await attendanceCacheService.SetEmployeeNameAsync(empId.Value, employeeName ?? string.Empty);
+                    var cachedClockIn = await attendanceCacheService.GetClockInAsync(empId.Value);
+                    if (cachedClockIn != null)
+                    {
+                        await attendanceCacheService.SetClockInAsync(
+                            empId.Value,
+                            employeeName ?? string.Empty,
+                            cachedClockIn.ClockInTime,
+                            cachedClockIn.WorkType,
+                            cachedClockIn.Status);
+                    }
                     var rabbitService = HttpContext.RequestServices.GetRequiredService<IRabbitRegistration>();
                     await using var rabbitConnection = await rabbitService.GetConnection();
                     await rabbitService.PublishAttendanceEventAsync(rabbitConnection, empId.Value, "ClockIn", new
@@ -106,6 +119,9 @@ namespace MyApp.Namespace
 
                 if (result == 1)
                 {
+                    var attendanceCacheService = HttpContext.RequestServices.GetRequiredService<IAttedanceCacheService>();
+                    var employeeName = HttpContext.Session.GetString("EmployeeName");
+                    await attendanceCacheService.SetEmployeeNameAsync(empId.Value, employeeName ?? string.Empty);
                     var rabbitService = HttpContext.RequestServices.GetRequiredService<IRabbitRegistration>();
                     await using var rabbitConnection = await rabbitService.GetConnection();
                     await rabbitService.PublishAttendanceEventAsync(rabbitConnection, empId.Value, "ClockOut", new
