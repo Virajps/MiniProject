@@ -1,6 +1,7 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
 using Microsoft.AspNetCore.DataProtection;
+using Repositories;
 using Repositories.Implementations;
 using Repositories.Interfaces;
 using Repositories.Services;
@@ -25,6 +26,7 @@ builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IRedisUserService, RedisUserService>();
 builder.Services.AddScoped<IAttedanceCacheService,AttedanceCacheService>();
 builder.Services.AddScoped<IRabbitRegistration,RabbitRegistration>();
+builder.Services.AddScoped<OTPEmailService>();
 
 builder.Services.AddSingleton<IDatabase>(provider =>
 {

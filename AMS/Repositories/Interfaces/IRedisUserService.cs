@@ -10,5 +10,8 @@ namespace Repositories.Services
     {
         Task SetUserAsync(t_Employee user);
         Task<t_Employee?> GetUserAsync(string email);
+        Task SetOTP(string email, string otp);
+        Task<string> GetOTP(string email);
+        Task RemoveOTP(string email);
     }
 }

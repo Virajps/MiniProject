@@ -8,7 +8,7 @@ using Repositories.Services;
 using StackExchange.Redis;
 namespace Repositories.Services
 {
-    public class RedisUserService:IRedisUserService
+    public class RedisUserService : IRedisUserService
     {
         private readonly IDatabase _database;
 
@@ -60,6 +60,20 @@ namespace Repositories.Services
         private static string GetRedisKey(string email)
         {
             return $"user:{email.Trim().ToLowerInvariant()}";
+        }
+        public async Task SetOTP(string email, string otp)
+        {
+            await _database.StringSetAsync(email, otp, TimeSpan.FromMinutes(5));
+        }
+
+        public async Task<string> GetOTP(string email)
+        {
+            return await _database.StringGetAsync(email);
+        }
+
+        public async Task RemoveOTP(string email)
+        {
+            await _database.KeyDeleteAsync(email);
         }
     }
 }
