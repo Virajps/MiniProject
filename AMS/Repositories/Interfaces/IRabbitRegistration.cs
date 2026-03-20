@@ -11,5 +11,6 @@ namespace Repositories.Services
     {
         Task<IConnection> GetConnection();
          Task PublishUserRegistrationAsync(IConnection conn, t_Employee user);
+         Task PublishAttendanceEventAsync(IConnection conn, int employeeId, string eventType, object payload);
     }
 }

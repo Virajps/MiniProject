@@ -176,10 +176,12 @@ namespace Repositories.Implementations
             {
                 await _conn.CloseAsync();
                 using var cmd = new NpgsqlCommand(
-                    @"SELECT a.*, e.c_name FROM t_attendance a
-                LEFT JOIN t_employee e 
-                ON a.c_empid = e.c_empid
-                ORDER BY a.c_attenddate", _conn);
+                        @"SELECT a.*, e.c_name 
+                        FROM t_attendance a
+                        LEFT JOIN t_employee e 
+                        ON a.c_empid = e.c_empid
+                        WHERE a.c_empid = @id 
+                        AND a.c_attenddate = @today", _conn);
                 cmd.Parameters.AddWithValue("@id", empId);
                 cmd.Parameters.AddWithValue("@today", DateOnly.FromDateTime(DateTime.Today));
                 await _conn.OpenAsync();

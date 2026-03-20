@@ -19,6 +19,7 @@ namespace Repositories.Services
         private readonly int Port;
 
         private const string QueueName = "Registrations";
+        private const string AttendanceQueueName = "AttendanceEvents";
 
         public RabbitRegistration(IConfiguration config)
         {
@@ -80,6 +81,40 @@ namespace Repositories.Services
             basicProperties: properties,
             body: body
         );
+        }
+        public async Task PublishAttendanceEventAsync(IConnection conn, int employeeId, string eventType, object payload)
+        {
+            using var channel = await conn.CreateChannelAsync();
+
+            await channel.QueueDeclareAsync(
+                queue: AttendanceQueueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
+
+            var message = new
+            {
+                EmployeeId = employeeId,
+                EventType = eventType,
+                EventTime = DateTime.UtcNow,
+                Payload = payload
+            };
+
+            var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
+
+            var properties = new BasicProperties
+            {
+                Persistent = true
+            };
+
+            await channel.BasicPublishAsync(
+                exchange: string.Empty,
+                routingKey: AttendanceQueueName,
+                mandatory: false,
+                basicProperties: properties,
+                body: body
+            );
         }
     }
 }
