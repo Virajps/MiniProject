@@ -77,7 +77,7 @@ namespace Repositories.Implementations
             await _conn.CloseAsync();
 
             using (var com = new NpgsqlCommand(
-                       @"INSERT INTO t_employee
+                    @"INSERT INTO t_employee
                     (c_name, c_email, c_password, c_role,c_gender, c_image)
                     VALUES
                     (@c_name, @c_email, @c_password, @c_role,@c_gender, @c_image)", _conn))
