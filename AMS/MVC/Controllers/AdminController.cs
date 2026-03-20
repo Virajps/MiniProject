@@ -174,9 +174,21 @@ namespace MyApp.Namespace
             }
             else
             {
-                // var data = await _dashboardRepository.GetEmployeeProgress(empId, month, year);
-                var data = await _elasticSearchService.GetMonthlyReportAsync(empId, month, year);
-                return Json(data);
+                try
+                {
+                    var data = await _elasticSearchService.GetMonthlyReportAsync(empId, month, year);
+                    
+                    if (data == null)
+                    {
+                        return Json(new { success = false, data = (object)null, message = "No data found" });
+                    }
+                    
+                    return Json(new { success = true, data = data });
+                }
+                catch (Exception ex)
+                {
+                    return Json(new { success = false, data = (object)null, message = ex.Message });
+                }
             }
         }
 
@@ -290,6 +302,202 @@ namespace MyApp.Namespace
 
             var removed = await _rabbitRegistration.RemoveNotificationAsync(notificationId);
             return Ok(new { success = removed });
+        }
+
+        //------------- Kendo Grid Methods - ElasticSearch Data Binding ---------//
+
+        [HttpGet]
+        public async Task<IActionResult> GetEmployeeGridData(
+            int? employeeId,
+            string? employeeName,
+            string? employeeStatus,
+            string? workType,
+            string? taskType,
+            string? attendStatus,
+            int? month,
+            int? year,
+            DateTime? fromDate,
+            DateTime? toDate,
+            int skip = 0,
+            int take = 10)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+                return Unauthorized(new { success = false, message = "Unauthorized" });
+
+            try
+            {
+                var allData = await _elasticSearchService.FilterEmployeesAsync(new EmployeeFilterRequest
+                {
+                    EmployeeId = employeeId,
+                    EmployeeName = employeeName,
+                    EmployeeStatus = employeeStatus,
+                    WorkType = workType,
+                    TaskType = taskType,
+                    AttendStatus = attendStatus,
+                    Month = month,
+                    Year = year,
+                    FromDate = fromDate,
+                    ToDate = toDate
+                });
+
+                var total = allData.Count;
+                var data = allData.Skip(skip).Take(take).ToList();
+
+                return Json(new
+                {
+                    success = true,
+                    data = data,
+                    total = total
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAnalyticsGridData(
+            string analysisType, // "worktype" or "tasktype"
+            int? employeeId,
+            int? month,
+            int? year,
+            DateTime? fromDate,
+            DateTime? toDate)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+                return Unauthorized(new { success = false, message = "Unauthorized" });
+
+            try
+            {
+                var request = new AttendanceAnalysisRequest
+                {
+                    EmployeeId = employeeId,
+                    Month = month,
+                    Year = year,
+                    FromDate = fromDate,
+                    ToDate = toDate
+                };
+
+                object data = analysisType?.ToLower() == "tasktype"
+                    ? await _elasticSearchService.GetTaskTypeAnalysisAsync(request)
+                    : await _elasticSearchService.GetWorkTypeAnalysisAsync(request);
+
+                return Json(new
+                {
+                    success = true,
+                    data = (List<AnalysisBucketResult>)data,
+                    total = ((List<AnalysisBucketResult>)data).Count
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTaskSummaryGridData(
+            int empId,
+            string type,
+            DateTime date,
+            int skip = 0,
+            int take = 10)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+                return Unauthorized(new { success = false, message = "Unauthorized" });
+
+            try
+            {
+                var allData = await _elasticSearchService.GetEmployeeTaskSummaryAsync(empId, type, date);
+                var total = allData.Count;
+                var data = allData.Skip(skip).Take(take).ToList();
+
+                return Json(new
+                {
+                    success = true,
+                    data = data,
+                    total = total
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEmployeeDropdownList()
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+                return Unauthorized(new { success = false, message = "Unauthorized" });
+
+            try
+            {
+                var employees = await _elasticSearchService.FilterEmployeesAsync(new EmployeeFilterRequest());
+                var dropdownData = employees
+                    .Select(e => new { id = e.EmployeeId, name = e.EmployeeName })
+                    .OrderBy(x => x.name)
+                    .ToList();
+
+                return Json(new { success = true, data = dropdownData });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ReindexAllData()
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+                return Unauthorized(new { success = false, message = "Unauthorized" });
+
+            try
+            {
+                var allAttendance = await _repo.GetAllAttendance();
+                if (allAttendance.Count == 0)
+                    return Json(new { success = true, message = "No attendance records to index" });
+
+                int indexedCount = 0;
+                int failedCount = 0;
+
+                foreach (var attend in allAttendance)
+                {
+                    try
+                    {
+                        var empData = await _employee.GetUserById(attend.EmpId);
+                        var result = await _elasticSearchService.IndexAttendanceAsync(
+                            attend,
+                            empData?.Name,
+                            empData?.Email,
+                            empData?.Status);
+                        if (result) indexedCount++;
+                        else failedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error indexing attendance {attend.AttendId}: {ex.Message}");
+                        failedCount++;
+                    }
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Re-indexing complete. Indexed: {indexedCount}, Failed: {failedCount}, Total: {allAttendance.Count}"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
     }
 }

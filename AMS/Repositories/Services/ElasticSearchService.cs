@@ -460,5 +460,53 @@ namespace Repositories.Services
                 };
             }
         }
+
+        public async Task<AttendanceElasticDocument?> GetAttendanceByIdAsync(int attendId)
+        {
+            try
+            {
+                var response = await _client.GetAsync<AttendanceElasticDocument>(
+                    attendId,
+                    g => g.Index(_indexName));
+
+                return response.IsValidResponse ? response.Source : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task<int> ReIndexAttendanceWithEmployeeDataAsync(
+            IEnumerable<t_Attendance> attendances,
+            string employeeName,
+            string employeeEmail,
+            string employeeStatus)
+        {
+            var indexedCount = 0;
+
+            foreach (var attendance in attendances)
+            {
+                try
+                {
+                    var indexed = await IndexAttendanceAsync(
+                        attendance,
+                        employeeName,
+                        employeeEmail,
+                        employeeStatus);
+
+                    if (indexed)
+                    {
+                        indexedCount++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"ReIndexAttendanceWithEmployeeDataAsync Error for AttendId {attendance.AttendId}: {ex.Message}");
+                }
+            }
+
+            return indexedCount;
+        }
     }
 }
