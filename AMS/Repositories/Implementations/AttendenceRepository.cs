@@ -9,13 +9,15 @@ namespace Repositories.Implementations
     public class AttendenceRepository : IAttendenceInterface
     {
         private readonly NpgsqlConnection _conn;
+        private readonly IAttedanceCacheService _attendanceCacheService;
         private const int ClockInHourLimit = 9;
         private const int ClockInMinLimit = 15;
         private const int ClockOutHourLimit = 17;
         private const int ClockOutMinLimit = 0;
-        public AttendenceRepository(NpgsqlConnection conn)
+        public AttendenceRepository(NpgsqlConnection conn, IAttedanceCacheService attedanceCacheService)
         {
             _conn = conn;
+            _attendanceCacheService = attedanceCacheService;
         }
         public async Task<List<vm_TaskSummary>> GetEmployeeTaskSummary(int EmployeeId, string type, DateTime date)
         {
@@ -311,21 +313,25 @@ namespace Repositories.Implementations
                 var existing = await GetTodayAttendance(empId);
                 if (existing != null) return 0;
 
+                var cachedClockIn = await _attendanceCacheService.GetClockInAsync(empId);
+                if (cachedClockIn != null && cachedClockIn.ClockInTime.Date == DateTime.Today) return 0;
+
                 var now = DateTime.Now;
                 var status = IsLateIn(now.Hour, now.Minute) ? "LateIn" : "Regular";
-
-                await _conn.CloseAsync();
-                using var cmd = new NpgsqlCommand(
-                    @"INSERT INTO t_attendance (c_empid, c_attenddate, c_clockinhour, c_clockinmin, c_attendstatus, c_worktype)
-                      VALUES (@empid, @date, @hour, @min, @status, @wtype)", _conn);
-                cmd.Parameters.AddWithValue("@empid", empId);
-                cmd.Parameters.AddWithValue("@date", DateOnly.FromDateTime(DateTime.Today));
-                cmd.Parameters.AddWithValue("@hour", now.Hour);
-                cmd.Parameters.AddWithValue("@min", now.Minute);
-                cmd.Parameters.AddWithValue("@status", status);
-                cmd.Parameters.AddWithValue("@wtype", workType);
-                await _conn.OpenAsync();
-                await cmd.ExecuteNonQueryAsync();
+                await _attendanceCacheService.SetClockInAsync(empId, now, workType, status);
+    //---------------------Old Codes ------------------
+                // await _conn.CloseAsync();
+                // using var cmd = new NpgsqlCommand(
+                //     @"INSERT INTO t_attendance (c_empid, c_attenddate, c_clockinhour, c_clockinmin, c_attendstatus, c_worktype)
+                //       VALUES (@empid, @date, @hour, @min, @status, @wtype)", _conn);
+                // cmd.Parameters.AddWithValue("@empid", empId);
+                // cmd.Parameters.AddWithValue("@date", DateOnly.FromDateTime(DateTime.Today));
+                // cmd.Parameters.AddWithValue("@hour", now.Hour);
+                // cmd.Parameters.AddWithValue("@min", now.Minute);
+                // cmd.Parameters.AddWithValue("@status", status);
+                // cmd.Parameters.AddWithValue("@wtype", workType);
+                // await _conn.OpenAsync();
+                // await cmd.ExecuteNonQueryAsync();
                 return 1;
             }
             catch (Exception ex) { Console.WriteLine("ClockIn Error: " + ex.Message); return -1; }
@@ -337,31 +343,40 @@ namespace Repositories.Implementations
             try
             {
                 var today = await GetTodayAttendance(empId);
-                if (today == null || today.ClockInHour == null) return 0;
-                if (today.ClockOutHour != null) return -2; // already clocked out
+                if (today != null)
+                {
+                    return today.ClockOutHour != null ? -2 : 0;
+                }
+
+                var cachedClockIn = await _attendanceCacheService.GetClockInAsync(empId);
+                if (cachedClockIn == null || cachedClockIn.ClockInTime.Date != DateTime.Today) return 0;
 
                 var now = DateTime.Now;
                 var taskJoined = string.Join(",", taskTypes);
-                var workHours = CalculateWorkingHours(today.ClockInHour.Value, today.ClockInMin ?? 0, now.Hour, now.Minute);
+                var workHours = CalculateWorkingHours(cachedClockIn.ClockInTime.Hour, cachedClockIn.ClockInTime.Minute, now.Hour, now.Minute);
                 var status = IsEarlyOut(now.Hour, now.Minute) ? "EarlyOut"
-                                : today.AttendStatus == "LateIn" ? "LateIn"
+                                : cachedClockIn.Status == "LateIn" ? "LateIn"
                                 : "Regular";
 
                 await _conn.CloseAsync();
                 using var cmd = new NpgsqlCommand(
-                    @"UPDATE t_attendance
-                      SET c_clockouthour=@coh, c_clockoutmin=@com,
-                          c_workinghour=@wh, c_attendstatus=@status, c_tasktype=@task
-                      WHERE c_empid=@id AND c_attenddate=@today", _conn);
+                    @"INSERT INTO t_attendance
+                      (c_empid, c_attenddate, c_clockinhour, c_clockinmin, c_clockouthour, c_clockoutmin, c_workinghour, c_attendstatus, c_worktype, c_tasktype)
+                      VALUES
+                      (@id, @today, @cih, @cim, @coh, @com, @wh, @status, @wtype, @task)", _conn);
+                cmd.Parameters.AddWithValue("@id", empId);
+                cmd.Parameters.AddWithValue("@today", DateOnly.FromDateTime(DateTime.Today));
+                cmd.Parameters.AddWithValue("@cih", cachedClockIn.ClockInTime.Hour);
+                cmd.Parameters.AddWithValue("@cim", cachedClockIn.ClockInTime.Minute);
                 cmd.Parameters.AddWithValue("@coh", now.Hour);
                 cmd.Parameters.AddWithValue("@com", now.Minute);
                 cmd.Parameters.AddWithValue("@wh", workHours);
                 cmd.Parameters.AddWithValue("@status", status);
+                cmd.Parameters.AddWithValue("@wtype", cachedClockIn.WorkType);
                 cmd.Parameters.AddWithValue("@task", taskJoined);
-                cmd.Parameters.AddWithValue("@id", empId);
-                cmd.Parameters.AddWithValue("@today", DateOnly.FromDateTime(DateTime.Today));
                 await _conn.OpenAsync();
                 await cmd.ExecuteNonQueryAsync();
+                await _attendanceCacheService.RemoveClockInAsync(empId);
                 return 1;
             }
             catch (Exception ex) { Console.WriteLine("ClockOut Error: " + ex.Message); return -1; }

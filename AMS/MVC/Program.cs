@@ -13,7 +13,7 @@ builder.Services.AddScoped<IEmployeeInterface, EmployeeRepository>();
 builder.Services.AddScoped<IAttendenceInterface, AttendenceRepository>();
 builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IRedisUserService, RedisUserService>();
-
+builder.Services.AddScoped<IAttedanceCacheService,AttedanceCacheService>();
 builder.Services.AddScoped<IRabbitRegistration,RabbitRegistration>();
 
 builder.Services.AddSingleton<IDatabase>(provider =>
