@@ -111,6 +111,7 @@
         }
 
         .bell-icon {
+            position: relative;
             width: 42px;
             height: 42px;
             border-radius: 50%;
@@ -154,6 +155,28 @@
         .bell-icon.active::after {
             opacity: 1;
             transform: scale(1);
+        }
+
+        .notification-count {
+            position: absolute;
+            top: -6px;
+            right: -4px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 20px;
+            text-align: center;
+            box-shadow: 0 6px 14px rgba(239, 68, 68, 0.35);
+            border: 2px solid #ffffff;
+        }
+
+        .notification-count.is-hidden {
+            display: none;
         }
 
         .icon i {
@@ -495,6 +518,7 @@
                             <div class="icon">
                                 <i class="fi fi-rr-bell-notification-social-media"></i>
                             </div>
+                            <span class="notification-count is-hidden" id="notificationCount">0</span>
                         </div>
                         <div class="notification-panel" id="notificationPopup">
                             <div class="notification-panel-header">Notifications</div>
@@ -646,18 +670,33 @@
                     .append(renderNotificationSection("Clocks", attendanceItems));
             }
 
+            function updateNotificationCount(total) {
+                const count = Number(total) || 0;
+                const badge = $("#notificationCount");
+                if (count > 0) {
+                    badge.text(count > 99 ? "99+" : count);
+                    badge.removeClass("is-hidden");
+                } else {
+                    badge.text("0");
+                    badge.addClass("is-hidden");
+                }
+            }
+
             window.loadQueueMessages = function () {
                 $.get(getQueueMessagesUrl, function (response) {
                     if (!response || !response.success) {
                         $("#notificationList").html('<div class="notification-empty">Unable to load notifications</div>');
+                        updateNotificationCount(0);
                         return;
                     }
 
                     const registrationMessages = response.registrationMessages || [];
                     const attendanceMessages = response.attendanceMessages || [];
                     renderNotificationList(registrationMessages, attendanceMessages);
+                    updateNotificationCount(registrationMessages.length + attendanceMessages.length);
                 }).fail(function () {
                     $("#notificationList").html('<div class="notification-empty">Unable to load notifications</div>');
+                    updateNotificationCount(0);
                 });
             };
 
@@ -680,6 +719,8 @@
                     }
                 });
             };
+
+            loadQueueMessages();
 
     });
     </script>
