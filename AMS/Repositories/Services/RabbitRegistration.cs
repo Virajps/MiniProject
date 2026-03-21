@@ -193,6 +193,18 @@ namespace Repositories.Services
             return removed;
         }
 
+        public async Task<bool> RemoveAllNotificationsAsync()
+        {
+            using var connection = await GetConnection();
+            using var channel = await connection.CreateChannelAsync();
+
+            await ClearQueueAsync(channel, RegistrationQueueName);
+            await ClearQueueAsync(channel, AttendanceQueueName);
+            NotificationMap.Clear();
+
+            return true;
+        }
+
         private async Task<List<QueueNotificationItem>> ReadQueueMessagesAsync(string queueName, string notificationType)
         {
             using var connection = await GetConnection();
@@ -323,6 +335,18 @@ namespace Repositories.Services
             return parsedTime.ToLocalTime().ToString("dd-MM-yyyy hh:mm tt");
         }
 
+        private static async Task ClearQueueAsync(IChannel channel, string queueName)
+        {
+            await channel.QueueDeclareAsync(
+                queue: queueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
+
+            await channel.QueuePurgeAsync(queueName);
+        }
+
         private static string BuildNotificationId(string queueName, string rawMessage)
         {
             return $"{queueName}|{Convert.ToHexString(Encoding.UTF8.GetBytes(rawMessage))}";
@@ -354,15 +378,3 @@ namespace Repositories.Services
 
     }
  }
-
-
-
-
-
-
-
-
-
-       
-      
-        

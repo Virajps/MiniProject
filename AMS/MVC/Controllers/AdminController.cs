@@ -355,6 +355,19 @@ namespace MyApp.Namespace
             return Ok(new { success = removed });
         }
 
+        [HttpPost]
+        public async Task<IActionResult> RemoveAllQueueMessages()
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+            {
+                return RedirectToAction("Unauthorized", "User");
+            }
+
+            var removed = await _rabbitRegistration.RemoveAllNotificationsAsync();
+            return Ok(new { success = removed });
+        }
+
         //------------- Kendo Grid Methods - ElasticSearch Data Binding ---------//
 
         [HttpGet]
