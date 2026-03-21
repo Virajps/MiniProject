@@ -8,6 +8,7 @@ public interface IAttendenceInterface
      public Task<vm_AttendanceChartResult> GetAttendanceChart(int empId, string type, DateTime date);
      public Task<int> ClockIn(int empId, string workType);
      public Task<int> ClockOut(int empId, List<string> taskTypes);
+     public Task<bool> ReIndexEmployeeAttendanceAsync(int empId);
      public Task<List<vm_TaskSummary>> GetAllTaskSummary();
      public Task<List<vm_AttendanceScheduler>> GetAttendanceScheduler(int empId);
      public Task<List<vm_AttendanceScheduler>> GetAttendanceScheduler1(int empId);
