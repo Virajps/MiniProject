@@ -560,36 +560,27 @@ namespace Repositories.Implementations
 
                 await r.CloseAsync();
 
-                // Determine date range: past 3 months (previous 2 + current)
+                // Add all attendance records from the database (all months)
+                list.AddRange(attendanceMap.Values);
+
+                // Optionally, fill in "Absent" for missing days in the current month only
+                DateTime startMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
                 DateTime endMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month));
-                DateTime startMonth = endMonth.AddMonths(-2).AddDays(1 - endMonth.AddMonths(-2).Day);
-
                 int idCounter = 100000;
-
                 for (DateTime d = startMonth; d <= endMonth; d = d.AddDays(1))
                 {
-                    // Skip Sunday (Holiday)
-                    if (d.DayOfWeek == DayOfWeek.Sunday)
-                        continue;
-
-                    if (attendanceMap.ContainsKey(d))
+                    if (d.DayOfWeek == DayOfWeek.Sunday) continue;
+                    if (!attendanceMap.ContainsKey(d) && d.Date <= DateTime.Today)
                     {
-                        list.Add(attendanceMap[d]);
-                    }
-                    else
-                    {
-                        if (d.Date <= DateTime.Today)
+                        list.Add(new vm_AttendanceScheduler
                         {
-                            list.Add(new vm_AttendanceScheduler
-                            {
-                                Id = idCounter++,
-                                Title = "Attendance",
-                                Start = d,
-                                End = d,
-                                Status = "Absent",
-                                WorkingHour = 0
-                            });
-                        }
+                            Id = idCounter++,
+                            Title = "Attendance",
+                            Start = d,
+                            End = d,
+                            Status = "Absent",
+                            WorkingHour = 0
+                        });
                     }
                 }
             }

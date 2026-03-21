@@ -176,7 +176,7 @@ namespace MyApp.Namespace
             {
                 try
                 {
-                    var data = await _elasticSearchService.GetMonthlyReportAsync(empId, month, year);
+                    var data = await _dashboardRepository.GetEmployeeProgress(empId, month, year);
                     
                     if (data == null)
                     {
@@ -438,9 +438,10 @@ namespace MyApp.Namespace
 
             try
             {
-                var employees = await _elasticSearchService.FilterEmployeesAsync(new EmployeeFilterRequest());
+                var employees = await _employee.GetAllUsers();
                 var dropdownData = employees
-                    .Select(e => new { id = e.EmployeeId, name = e.EmployeeName })
+                    .Where(e => string.Equals(e.Role, "Employee", StringComparison.OrdinalIgnoreCase))
+                    .Select(e => new { id = e.EmployeeId, name = e.Name })
                     .OrderBy(x => x.name)
                     .ToList();
 
@@ -501,9 +502,3 @@ namespace MyApp.Namespace
         }
     }
 }
-    
-
-
-
-
-    
