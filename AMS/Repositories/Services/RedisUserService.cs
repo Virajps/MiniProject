@@ -57,7 +57,12 @@ namespace Repositories.Services
             return JsonSerializer.Deserialize<t_Employee>(redisValue!);
         }
 
-       public async Task<t_Employee?> GetUserByIdAsync(int employeeId)
+        private static string GetEmployeeIdRedisKey(int employeeId)
+        {
+            return $"user:id:{employeeId}";
+        }
+
+        public async Task<t_Employee?> GetUserByIdAsync(int employeeId)
         {
             if (employeeId <= 0)
             {

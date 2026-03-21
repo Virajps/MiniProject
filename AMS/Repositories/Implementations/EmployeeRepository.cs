@@ -1,15 +1,19 @@
 using Npgsql;
 using Repositories.Interfaces;
 using Repositories.Models;
+using Repositories.Services;
 
 namespace Repositories.Implementations
 {
     public class EmployeeRepository : IEmployeeInterface
     {
         private readonly NpgsqlConnection _conn;
-        public EmployeeRepository(NpgsqlConnection conn)
+        private readonly ElasticSearchService? _elasticSearchService;
+        
+        public EmployeeRepository(NpgsqlConnection conn, ElasticSearchService? elasticSearchService = null)
         {
             _conn = conn;
+            _elasticSearchService = elasticSearchService;
         }
         public async Task<int> DeleteUser(int EmployeeId)
         {
@@ -100,20 +104,20 @@ namespace Repositories.Implementations
             catch (Exception ex)
             {
                 Console.WriteLine("GetEmployeeProfileById Error: " + ex.Message);
-                return null;
+                return null!;
             }
             finally
             {
                 await _conn.CloseAsync();
             }
-
-            return null;
+            return null!;
         }
 
         public async Task<bool> UpdateUser(int EmployeeId, t_Employee employee)
         {
             try
             {
+                // Update employee data
                 using var cmd = new NpgsqlCommand(
                     "UPDATE t_employee SET c_name=@name, c_gender=@gender, c_image=@image WHERE c_empid=@empid",
                     _conn);
@@ -124,8 +128,66 @@ namespace Repositories.Implementations
                 cmd.Parameters.AddWithValue("@image", employee.Image ?? "");
 
                 await _conn.OpenAsync();
-
                 int rows = await cmd.ExecuteNonQueryAsync();
+                await _conn.CloseAsync();  // Close connection before re-using it
+
+                // Re-index all attendance records in ElasticSearch when employee info is updated
+                if (rows > 0 && _elasticSearchService != null)
+                {
+                    try
+                    {
+                        // Get fresh employee data
+                        var updatedEmp = await GetUserById(EmployeeId);
+                        if (updatedEmp != null)
+                        {
+                            // Fetch all attendance records for this employee from database
+                            await _conn.CloseAsync();  // Ensure connection is closed
+                            
+                            using var attCmd = new NpgsqlCommand(
+                                @"SELECT c_attendid, c_empid, c_attenddate, c_clockinhour, c_clockinmin, c_clockouthour, c_clockoutmin, c_workinghour, c_attendstatus, c_worktype, c_tasktype FROM t_attendance WHERE c_empid = @empid ORDER BY c_attenddate",
+                                _conn);
+                            attCmd.Parameters.AddWithValue("@empid", EmployeeId);
+                            
+                            await _conn.OpenAsync();
+                            using var attReader = await attCmd.ExecuteReaderAsync();
+                            var attendances = new List<t_Attendance>();
+                            
+                            while (await attReader.ReadAsync())
+                            {
+                                attendances.Add(new t_Attendance
+                                {
+                                    AttendId = attReader.GetInt32(attReader.GetOrdinal("c_attendid")),
+                                    EmpId = attReader.GetInt32(attReader.GetOrdinal("c_empid")),
+                                    AttendDate = attReader.GetFieldValue<DateOnly>(attReader.GetOrdinal("c_attenddate")).ToDateTime(TimeOnly.MinValue),
+                                    ClockInHour = attReader["c_clockinhour"] == DBNull.Value ? null : Convert.ToInt32(attReader["c_clockinhour"]),
+                                    ClockInMin = attReader["c_clockinmin"] == DBNull.Value ? null : Convert.ToInt32(attReader["c_clockinmin"]),
+                                    ClockOutHour = attReader["c_clockouthour"] == DBNull.Value ? null : Convert.ToInt32(attReader["c_clockouthour"]),
+                                    ClockOutMin = attReader["c_clockoutmin"] == DBNull.Value ? null : Convert.ToInt32(attReader["c_clockoutmin"]),
+                                    WorkingHour = attReader["c_workinghour"] == DBNull.Value ? null : Convert.ToInt32(attReader["c_workinghour"]),
+                                    AttendStatus = attReader["c_attendstatus"]?.ToString(),
+                                    WorkType = attReader["c_worktype"]?.ToString(),
+                                    TaskType = attReader["c_tasktype"]?.ToString()
+                                });
+                            }
+                            
+                            await _conn.CloseAsync();
+                            
+                            if (attendances.Count > 0)
+                            {
+                                await _elasticSearchService.ReIndexAttendanceWithEmployeeDataAsync(
+                                    attendances,
+                                    updatedEmp.Name ?? "Unknown",
+                                    updatedEmp.Email ?? "",
+                                    updatedEmp.Status ?? "");
+                            }
+                        }
+                    }
+                    catch (Exception esEx)
+                    {
+                        Console.WriteLine("ES Re-indexing Error: " + esEx.Message);
+                        // Don't fail update if ES fails
+                    }
+                }
 
                 return rows > 0;
             }

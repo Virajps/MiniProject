@@ -67,12 +67,11 @@ builder.Services.AddSingleton(provider =>
 {
     var configuration = builder.Configuration;
     var settings = new ElasticsearchClientSettings(new
-    Uri(configuration["Elasticsearch:Uri"]))
-    .ServerCertificateValidationCallback(CertificateValidations.AllowAll)
-    .DefaultIndex(configuration["Elasticsearch:DefaultIndex"])
+    Uri(configuration["Elasticsearch:Uri"] ?? throw new InvalidOperationException("Elasticsearch:Uri not configured")))
+    .DefaultIndex(configuration["Elasticsearch:DefaultIndex"] ?? "attendance")
     .Authentication(new
-    BasicAuthentication(configuration["Elasticsearch:Username"],
-    configuration["Elasticsearch:Password"]))
+    BasicAuthentication(configuration["Elasticsearch:Username"] ?? "elastic",
+    configuration["Elasticsearch:Password"] ?? ""))
     .DisableDirectStreaming();
     return new ElasticsearchClient(settings);
 });
@@ -106,6 +105,7 @@ async Task IndexDataOnStartup()
 {
     using var scope = app.Services.CreateScope();
     var AttendRepo = scope.ServiceProvider.GetRequiredService<IAttendenceInterface>();
+    var employeeRepo = scope.ServiceProvider.GetRequiredService<IEmployeeInterface>();
     var esService = scope.ServiceProvider.GetRequiredService<ElasticSearchService>();
     try
     {
@@ -113,11 +113,24 @@ async Task IndexDataOnStartup()
         var attendance = await AttendRepo.GetAllAttendance();
         if (attendance.Count > 0)
         {
+            int indexedCount = 0;
             foreach (var Attend in attendance)
             {
-                await esService.IndexAttendanceAsync(Attend);
+                // Get existing document from ES to check if already indexed
+                var existingDoc = await esService.GetAttendanceByIdAsync(Attend.AttendId);
+                if (existingDoc == null)
+                {
+                    // Fetch employee data to populate email and status
+                    var empData = await employeeRepo.GetUserById(Attend.EmpId);
+                    await esService.IndexAttendanceAsync(
+                        Attend,
+                        empData?.Name,
+                        empData?.Email,
+                        empData?.Status);
+                    indexedCount++;
+                }
             }
-            Console.WriteLine($" {attendance.Count} attendance indexed successfully in ElasticSearch.");
+            Console.WriteLine($" {indexedCount} new attendance records indexed in ElasticSearch (Total in DB: {attendance.Count}).");
         }
         else
         {

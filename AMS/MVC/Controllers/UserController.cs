@@ -56,13 +56,11 @@ namespace MyApp.Namespace
         public async Task<IActionResult> Login(vm_login login)
         {
             t_Employee UserData = await _empRepo.LoginUser(login);
-            t_Attendance attendance = new t_Attendance();
             if (ModelState.IsValid)
             {
                 if (UserData.EmployeeId != 0)
                 {
                     await _redis.SetUserAsync(UserData);
-                    await _elasticSearch.IndexAttendanceAsync(attendance);
                     HttpContext.Session.SetInt32("EmployeeId", UserData.EmployeeId);
                     HttpContext.Session.SetString("EmployeeName", UserData.Name);
                     HttpContext.Session.SetString("Role", UserData.Role);
