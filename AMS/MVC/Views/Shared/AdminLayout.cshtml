@@ -105,6 +105,240 @@
             .profile-trigger .k-icon {
                 color: #1ca7ec;
             }
+            
+        .bell-wrapper {
+            position: relative;
+        }
+
+        .bell-icon {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid #d6e0ea;
+            background: linear-gradient(180deg, #ffffff 0%, #eef4f8 100%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #3b4b5c;
+            box-shadow: 0 8px 18px rgba(148, 163, 184, 0.16);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+        }
+
+        .bell-icon:hover {
+            transform: translateY(-1px);
+            border-color: #b8d7e8;
+            background: linear-gradient(180deg, #ffffff 0%, #e4f4fb 100%);
+            box-shadow: 0 12px 24px rgba(56, 189, 248, 0.16);
+        }
+
+        .bell-icon.active {
+            border-color: #8dd4f5;
+            background: linear-gradient(180deg, #fdfefe 0%, #dff4fd 100%);
+            box-shadow: 0 14px 28px rgba(14, 165, 233, 0.2);
+        }
+
+        .bell-icon::after {
+            content: "";
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            border: 1px solid rgba(28, 167, 236, 0.18);
+            opacity: 0;
+            transform: scale(0.92);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            pointer-events: none;
+        }
+
+        .bell-icon:hover::after,
+        .bell-icon.active::after {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .notification-count {
+            position: absolute;
+            top: -6px;
+            right: -4px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 20px;
+            text-align: center;
+            box-shadow: 0 6px 14px rgba(239, 68, 68, 0.35);
+            border: 2px solid #ffffff;
+        }
+
+        .notification-count.is-hidden {
+            display: none;
+        }
+
+        .icon i {
+            transition: transform 0.2s ease;
+        }
+
+        .icon:hover i {
+            animation: bellRing 0.6s ease;
+        }
+
+        @@keyframes bellRing {
+            0% { transform: rotate(0); }
+            15% { transform: rotate(15deg); }
+            30% { transform: rotate(-12deg); }
+            45% { transform: rotate(10deg); }
+            60% { transform: rotate(-8deg); }
+            75% { transform: rotate(5deg); }
+            100% { transform: rotate(0); }
+        }
+
+        .notification-panel {
+            position: absolute;
+            top: calc(100% + 12px);
+            right: 0;
+            width: min(430px, 90vw);
+            background: linear-gradient(180deg, #fcfeff 0%, #f4f8fb 100%);
+            border: 1px solid #d9e4ec;
+            border-radius: 18px;
+            box-shadow: 0 24px 50px rgba(15, 23, 42, 0.18);
+            display: none;
+            z-index: 60;
+            overflow: hidden;
+        }
+
+        .notification-panel.show {
+            display: block;
+            animation: notificationPanelIn 0.2s ease;
+        }
+
+        .notification-panel::before {
+            content: "";
+            position: absolute;
+            top: -8px;
+            right: 16px;
+            width: 16px;
+            height: 16px;
+            background: #fcfeff;
+            border-top: 1px solid #d9e4ec;
+            border-left: 1px solid #d9e4ec;
+            transform: rotate(45deg);
+        }
+
+        .notification-panel-header {
+            padding: 14px 18px;
+            background: linear-gradient(90deg, #f0f9ff 0%, #ecfeff 100%);
+            border-bottom: 1px solid #dbe7ef;
+            font-weight: 700;
+            color: #1f2937;
+            letter-spacing: 0.01em;
+        }
+
+        #notificationList {
+            max-height: 360px;
+            overflow-y: auto;
+            padding: 12px;
+            background: transparent;
+        }
+
+        .notification-section + .notification-section {
+            margin-top: 14px;
+        }
+
+        .notification-section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 0 2px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        .notification-section-body {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .notification-item {
+            background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+            border: 1px solid #dee8ef;
+            border-radius: 14px;
+            padding: 12px 14px;
+            box-shadow: 0 10px 22px rgba(148, 163, 184, 0.1);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .notification-item:hover {
+            transform: translateY(-1px);
+            border-color: #c9dbe7;
+            box-shadow: 0 14px 28px rgba(148, 163, 184, 0.16);
+        }
+
+        .notification-item strong {
+            color: #1f2937;
+            font-size: 14px;
+        }
+
+        .notification-item span {
+            color: #4b5563;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .notification-time {
+            display: block;
+            margin-top: 6px;
+            color: #7c8a9a;
+            font-size: 12px;
+        }
+
+        .notification-empty {
+            color: #6b7280;
+            font-size: 14px;
+            text-align: center;
+            padding: 22px 12px;
+            border: 1px dashed #d5dee7;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.75);
+        }
+
+        .remove-queue-message {
+            border-radius: 999px;
+            padding: 6px 12px;
+            border-color: #f3c6ce;
+            color: #c24157;
+            background: #fff7f8;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .remove-queue-message:hover {
+            background: #ffe8ec;
+            border-color: #eaa7b4;
+            color: #9f1239;
+        }
+
+        @@keyframes notificationPanelIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-8px) scale(0.98);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
 
             /* Sidebar toggle button */
 
@@ -156,42 +390,6 @@
             .sidebar-backdrop {
                 display: none;
             }
-
-            @* .bell-icon{
-                border: solid;
-                border-radius: 200% ;
-            } *@
-
-            .icon{
-                color: #1ca7ec;
-                font-size: 25px;
-                overflow: hidden;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-            }
-            /* Bell hover animation */
-            .icon i {
-                transition: transform 0.2s ease;
-            }
-
-            .icon:hover i {
-                animation: bellRing 0.6s ease;
-            }
-
-            /* Keyframes for bell swing */
-            @@keyframes bellRing {
-                0%   { transform: rotate(0); }
-                15%  { transform: rotate(15deg); }
-                30%  { transform: rotate(-12deg); }
-                45%  { transform: rotate(10deg); }
-                60%  { transform: rotate(-8deg); }
-                75%  { transform: rotate(5deg); }
-                100% { transform: rotate(0); }
-            }
-
-
 
             /* Mobile layout */
 
@@ -315,11 +513,21 @@
                 </div>
 
                 <div class="d-flex align-items-center ms-auto gap-3">
-                    <div class="bell-icon ms-auto mb-0" id="bellIcon">
-                        <div class="icon">
-                            <i class="fi fi-rr-bell-notification-social-media"></i>
+                    <div class="bell-wrapper">
+                        <div class="bell-icon" id="bellIcon">
+                            <div class="icon">
+                                <i class="fi fi-rr-bell-notification-social-media"></i>
+                            </div>
+                            <span class="notification-count is-hidden" id="notificationCount">0</span>
+                        </div>
+                        <div class="notification-panel" id="notificationPopup">
+                            <div class="notification-panel-header">Notifications</div>
+                            <div class="card-body p-2" id="notificationList">
+                                <p class="mb-0">No notifications</p>
+                            </div>
                         </div>
                     </div>
+
                     <ul id="profileMenu" class="ms-auto mb-0">
                         <li>
                             <span class="profile-trigger" aria-label="Profile options">
@@ -339,16 +547,6 @@
                     </ul>
                 </div>
             </header>
-            <div id="notificationPopup" style="display:none; width:300px;">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body p-2" id="notificationList">
-                        <p class="mb-1">✔ Employee John checked in</p>
-                        <p class="mb-1">✔ Report generated</p>
-                        <p class="mb-0">✔ New access granted</p>
-                        
-                    </div>
-                </div>
-            </div>
 
             <main class="p-3">
                 @RenderBody()
@@ -363,6 +561,9 @@
             $(function () {
                 var $shell = $(".admin-shell");
                 var $body = $("body");
+                var getQueueMessagesUrl = '@Url.Action("GetQueueMessages", "Admin")';
+                var removeQueueMessageUrl = '@Url.Action("RemoveQueueMessage", "Admin")';
+
 
                 $("#adminSidebarPanelBar").kendoPanelBar({
                     expandMode: "single",
@@ -396,26 +597,28 @@
                 $("#logoutBtn").kendoButton({
                     icon: "logout"
                 });
+            $("#bellIcon").on("click", function (e) {
+                e.stopPropagation();
+                const popup = $("#notificationPopup");
+                popup.toggleClass("show");
+                $("#bellIcon").toggleClass("active", popup.hasClass("show"));
+                if (popup.hasClass("show")) {
+                    loadQueueMessages();
+                }
+            });
+
+            $("#notificationPopup").on("click", function (e) {
+                e.stopPropagation();
+            });
+
+            $(document).on("click", function () {
+                $("#notificationPopup").removeClass("show");
+                $("#bellIcon").removeClass("active");
+            });
 
                 $(".sidebar-backdrop").on("click", function () {
                     $shell.removeClass("sidebar-open");
                     $body.removeClass("sidebar-open-mobile");
-                });
-
-                $(function () {
-                    var popup = $("#notificationPopup").kendoPopup({
-                        anchor: $("#bellIcon"),
-                        origin: "bottom right",
-                        position: "top right"
-                    }).data("kendoPopup");
-                    $("#bellIcon").on("click", function (e) {
-                        e.stopPropagation();
-                        popup.toggle();
-                    });
-                    // Close when clicking outside
-                    $(document).on("click", function () {
-                        popup.close();
-                    });
                 });
 
                 $(window).on("resize", function () {
@@ -424,7 +627,102 @@
                         $body.removeClass("sidebar-open-mobile");
                     }
                 });
-            });
+                
+            function renderNotificationSection(title, items) {
+                const section = $('<div class="notification-section"></div>');
+                section.append(`<div class="notification-section-title">${title}</div>`);
+
+                const body = $('<div class="notification-section-body"></div>');
+
+                if (!items || !items.length) {
+                    body.html('<div class="notification-empty">No notifications</div>');
+                    section.append(body);
+                    return section;
+                }
+
+                items.forEach(function (item) {
+                    const timeText = item.displayTime ? `<span class="notification-time">${item.displayTime}</span>` : "";
+                    const safeNotificationId = String(item.id || "").replace(/'/g, "\\'");
+                    const notification = $(`
+                        <div class="notification-item" data-id="${item.id}">
+                            <div class="d-flex justify-content-between align-items-center gap-3">
+                                <div>
+                                    <strong>${item.title}</strong><br />
+                                    <span>${item.message}</span>
+                                    ${timeText}
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-queue-message" onclick="removeQueueMessage('${safeNotificationId}'); return false;">Remove</button>
+                            </div>
+                        </div>
+                    `);
+                    body.append(notification);
+                });
+
+                section.append(body);
+                return section;
+            }
+
+            function renderNotificationList(registrationItems, attendanceItems) {
+                const container = $("#notificationList");
+                container.empty();
+                container
+                    .append(renderNotificationSection("Registrations", registrationItems))
+                    .append(renderNotificationSection("Clocks", attendanceItems));
+            }
+
+            function updateNotificationCount(total) {
+                const count = Number(total) || 0;
+                const badge = $("#notificationCount");
+                if (count > 0) {
+                    badge.text(count > 99 ? "99+" : count);
+                    badge.removeClass("is-hidden");
+                } else {
+                    badge.text("0");
+                    badge.addClass("is-hidden");
+                }
+            }
+
+            window.loadQueueMessages = function () {
+                $.get(getQueueMessagesUrl, function (response) {
+                    if (!response || !response.success) {
+                        $("#notificationList").html('<div class="notification-empty">Unable to load notifications</div>');
+                        updateNotificationCount(0);
+                        return;
+                    }
+
+                    const registrationMessages = response.registrationMessages || [];
+                    const attendanceMessages = response.attendanceMessages || [];
+                    renderNotificationList(registrationMessages, attendanceMessages);
+                    updateNotificationCount(registrationMessages.length + attendanceMessages.length);
+                }).fail(function () {
+                    $("#notificationList").html('<div class="notification-empty">Unable to load notifications</div>');
+                    updateNotificationCount(0);
+                });
+            };
+
+            window.removeQueueMessage = function (notificationId) {
+                if (!notificationId) {
+                    return;
+                }
+                
+                $.ajax({
+                    url: removeQueueMessageUrl,
+                    type: "POST",
+                    data: { notificationId: notificationId },
+                    success: function (response) {
+                        if (response && response.success) {
+                            window.loadQueueMessages();
+                        }
+                    },
+                    error: function () {
+                        window.loadQueueMessages();
+                    }
+                });
+            };
+
+            loadQueueMessages();
+
+    });
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
