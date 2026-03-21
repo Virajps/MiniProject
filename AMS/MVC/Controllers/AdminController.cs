@@ -441,7 +441,7 @@ namespace MyApp.Namespace
                 var employees = await _employee.GetAllUsers();
                 var dropdownData = employees
                     .Where(e => string.Equals(e.Role, "Employee", StringComparison.OrdinalIgnoreCase))
-                    .Select(e => new { id = e.EmployeeId, name = e.Name })
+                    .Select(e => new { id = e.EmployeeId, name = e.Name, email = e.Email })
                     .OrderBy(x => x.name)
                     .ToList();
 

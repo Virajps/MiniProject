@@ -145,12 +145,14 @@ $(document).ready(function () {
 
         const name = data.employeeName || data.EmployeeName || 'Unknown';
         const empId = data.employeeId || data.EmployeeId || 'N/A';
+        const email = data.email || data.Email || data.employeeEmail || data.EmployeeEmail || 'N/A';
         const hours = data.totalWorkingHours || data.TotalWorkingHours || 0;
 
         $("#profileCard").html(`
             <div>
                 <h3>${name}</h3>
                 <span>Employee ID : ${empId}</span>
+                <span style="display:block; margin-top:5px;">Email : ${email}</span>
             </div>
 
             <div>

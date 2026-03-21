@@ -184,6 +184,7 @@ namespace Repositories.Services
             {
                 EmployeeId = empId,
                 EmployeeName = documents.FirstOrDefault()?.EmployeeName,
+                Email = documents.FirstOrDefault()?.EmployeeEmail,
                 Present = documents.Count(x => string.Equals(x.AttendStatus, "Regular", StringComparison.OrdinalIgnoreCase)),
                 LateIn = documents.Count(x => string.Equals(x.AttendStatus, "LateIn", StringComparison.OrdinalIgnoreCase)),
                 EarlyOut = documents.Count(x => string.Equals(x.AttendStatus, "EarlyOut", StringComparison.OrdinalIgnoreCase)),
