@@ -77,6 +77,45 @@ namespace Repositories.Services
       await smtp.SendMailAsync(message);
     }
 
+    public async Task SendEmailWithAttachment(string toEmail, string displayName, string subject, string htmlBody, byte[] attachmentBytes, string attachmentFileName, string attachmentContentType)
+    {
+      ValidateOptions(toEmail, subject, htmlBody);
+
+      if (attachmentBytes == null || attachmentBytes.Length == 0)
+        throw new InvalidOperationException("Attachment content is required.");
+      if (string.IsNullOrWhiteSpace(attachmentFileName))
+        throw new InvalidOperationException("Attachment file name is required.");
+      if (string.IsNullOrWhiteSpace(attachmentContentType))
+        throw new InvalidOperationException("Attachment content type is required.");
+
+      using var message = new MailMessage
+      {
+        From = new MailAddress(_settings.SenderEmail, _settings.SenderName),
+        Subject = subject,
+        Body = htmlBody,
+        IsBodyHtml = true,
+        BodyEncoding = System.Text.Encoding.UTF8,
+        SubjectEncoding = System.Text.Encoding.UTF8
+      };
+
+      var recipientName = string.IsNullOrWhiteSpace(displayName) ? toEmail : displayName;
+      message.To.Add(new MailAddress(toEmail, recipientName));
+
+      var attachmentStream = new System.IO.MemoryStream(attachmentBytes);
+      var attachment = new Attachment(attachmentStream, attachmentFileName, attachmentContentType);
+      message.Attachments.Add(attachment);
+
+      using var smtp = new SmtpClient(_settings.SmtpServer, _settings.Port)
+      {
+        EnableSsl = true,
+        UseDefaultCredentials = false,
+        DeliveryMethod = SmtpDeliveryMethod.Network,
+        Credentials = new NetworkCredential(_settings.SenderEmail, _settings.AppPassword)
+      };
+
+      await smtp.SendMailAsync(message);
+    }
+
     private void ValidateOptions(string toEmail, string subject, string body)
     {
       if (string.IsNullOrWhiteSpace(_settings.SmtpServer))

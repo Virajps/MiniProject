@@ -12,6 +12,7 @@ namespace MyApp.Namespace
         private readonly IWebHostEnvironment _env;
         private readonly IEmployeeInterface _employee;
         private readonly IGmailSmtpSenderInterface _email;
+        private readonly ReportEmailService _reportEmailService;
         private readonly IDashboardRepository _dashboardRepository;
         private readonly ElasticSearchService _elasticSearchService;
         private readonly IRabbitRegistration _rabbitRegistration;
@@ -23,7 +24,8 @@ namespace MyApp.Namespace
             IDashboardRepository dashboardRepository,
             IGmailSmtpSenderInterface email,
             ElasticSearchService elasticSearchService,
-            IRabbitRegistration rabbitRegistration)
+            IRabbitRegistration rabbitRegistration,
+            ReportEmailService reportEmailService)
         {
             _env = env;
             _employee = employee;
@@ -32,6 +34,7 @@ namespace MyApp.Namespace
             _email = email;
             _elasticSearchService = elasticSearchService;
             _rabbitRegistration=rabbitRegistration;
+            _reportEmailService = reportEmailService;
         }
         // GET: AdminController
         public ActionResult Index()
@@ -190,6 +193,54 @@ namespace MyApp.Namespace
                     return Json(new { success = false, data = (object)null, message = ex.Message });
                 }
             }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendProgressReportEmail([FromBody] ProgressReportEmailRequest request)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+            {
+                return Unauthorized(new { success = false, message = "Unauthorized" });
+            }
+
+            if (request == null || request.EmpId <= 0 || string.IsNullOrWhiteSpace(request.PdfBase64))
+            {
+                return BadRequest(new { success = false, message = "Invalid report request" });
+            }
+
+            var empData = await _employee.GetUserById(request.EmpId);
+            if (empData == null || string.IsNullOrWhiteSpace(empData.Email))
+            {
+                return BadRequest(new { success = false, message = "Employee email not found" });
+            }
+
+            byte[] pdfBytes;
+            try
+            {
+                pdfBytes = Convert.FromBase64String(request.PdfBase64);
+            }
+            catch
+            {
+                return BadRequest(new { success = false, message = "Invalid PDF data" });
+            }
+
+            var fileName = string.IsNullOrWhiteSpace(request.FileName)
+                ? $"report_{request.EmpId}_{request.Month}_{request.Year}.pdf"
+                : request.FileName;
+
+            await _reportEmailService.SendProgressReportEmail(empData.Email, empData.Name, pdfBytes, fileName);
+
+            return Ok(new { success = true, message = "Report email sent successfully" });
+        }
+
+        public class ProgressReportEmailRequest
+        {
+            public int EmpId { get; set; }
+            public int Month { get; set; }
+            public int Year { get; set; }
+            public string? FileName { get; set; }
+            public string? PdfBase64 { get; set; }
         }
 
         [HttpGet]
