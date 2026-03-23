@@ -111,6 +111,7 @@ a.k-link{
         <div style="align-self:flex-end;">
             <button id="generateReport" style="background-color: #0ea5e9; color:white; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; margin-right:10px;">Generate</button>
             <button id="exportReport" style="background-color: #0ea5e9; color:white; border:none; padding:8px 20px; border-radius:6px; cursor:pointer;">Export PDF</button>
+            <button id="sendReport" style="background-color: #0ea5e9; color:white; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; margin-left:10px;">Send PDF</button>
         </div>
     </div>
 
@@ -145,9 +146,13 @@ $(document).ready(function () {
             return;
         }
 
-        const name = data.employeeName || data.EmployeeName || 'Unknown';
+        const selectedEmployee = $("#employee").data("kendoDropDownList")?.dataItem();
+        const fallbackName = selectedEmployee?.name || $("#employee").data("kendoDropDownList")?.text();
+        const fallbackEmail = selectedEmployee?.email;
+
+        const name = data.employeeName || data.EmployeeName || fallbackName || 'Unknown';
         const empId = data.employeeId || data.EmployeeId || 'N/A';
-        const email = data.email || data.Email || data.employeeEmail || data.EmployeeEmail || 'N/A';
+        const email = data.email || data.Email || data.employeeEmail || data.EmployeeEmail || fallbackEmail || 'N/A';
         const hours = data.totalWorkingHours || data.TotalWorkingHours || 0;
 
         $("#profileCard").html(`
@@ -417,6 +422,71 @@ $(document).ready(function () {
                 kendo.drawing.pdf.saveAs(group, fileName);
             }).catch(function(err) {
                 alert("Error generating PDF: " + err);
+            });
+        }
+    });
+
+    $("#sendReport").kendoButton({
+        themeColor: "primary",
+        click: function () {
+            const emp = $("#employee").data("kendoDropDownList").value();
+            const month = $("#month").data("kendoDropDownList").value();
+            const year = $("#year").data("kendoDropDownList").value();
+
+            if (!emp || !month || !year) {
+                alert("Please generate report first");
+                return;
+            }
+
+            const fileName = "report_" + emp + "_" + month + "_" + year + ".pdf";
+            const sendButton = $("#sendReport").data("kendoButton");
+            if (sendButton) {
+                sendButton.enable(false);
+            }
+
+            kendo.drawing.drawDOM($("#exportArea"), {
+                paperSize: "A4",
+                margin: "1cm",
+                scale: 0.6,
+                landscape: true,
+                forcePageBreak: ".page-break"
+            }).then(function (group) {
+                return kendo.drawing.exportPDF(group);
+            }).then(function (dataUri) {
+                const base64 = (dataUri || "").split(",")[1];
+
+                if (!base64) {
+                    throw new Error("PDF generation failed");
+                }
+
+                return $.ajax({
+                    url: "/Admin/SendProgressReportEmail",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        empId: emp,
+                        month: month,
+                        year: year,
+                        fileName: fileName,
+                        pdfBase64: base64
+                    })
+                });
+            }).done(function (res) {
+                if (res && res.success) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "Sent Successfully",
+                        text: "Report sent to employee email successfully."
+                    });
+                } else {
+                    alert("Failed to send report: " + (res?.message || "Unknown error"));
+                }
+            }).fail(function (xhr) {
+                alert("Failed to send report: " + (xhr.responseJSON?.message || xhr.statusText || "Server error"));
+            }).always(function () {
+                if (sendButton) {
+                    sendButton.enable(true);
+                }
             });
         }
     });

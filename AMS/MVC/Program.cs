@@ -27,6 +27,7 @@ builder.Services.AddScoped<IRedisUserService, RedisUserService>();
 builder.Services.AddScoped<IAttedanceCacheService,AttedanceCacheService>();
 builder.Services.AddScoped<IRabbitRegistration,RabbitRegistration>();
 builder.Services.AddScoped<OTPEmailService>();
+builder.Services.AddScoped<ReportEmailService>();
 
 builder.Services.AddSingleton<IDatabase>(provider =>
 {
