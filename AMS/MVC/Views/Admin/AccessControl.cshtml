@@ -127,7 +127,7 @@
                     type: "PUT",
                     data: {
                         EmployeeId: empId,
-                        Status: status
+                        attendStatus: status
                     },
                     success: function (res) {
                         if (res.success) {
@@ -142,7 +142,24 @@
                     }
                 });
             }
+        //search javascript
+        let timeout = null;
 
+        $("#searchBox").on("keyup", function () {
+            clearTimeout(timeout);
+
+            let value = $(this).val();
+
+            timeout = setTimeout(function () {
+
+                var grid = $("#grid").data("kendoGrid");
+
+                grid.dataSource.read({
+                    employeeName: value   // 👈 send to controller
+                });
+
+            }, 300); // debounce
+        });
         $(document).ready(function () {
             var dataSource = new kendo.data.DataSource({
                 transport: {
