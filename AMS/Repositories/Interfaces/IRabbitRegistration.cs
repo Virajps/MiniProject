@@ -25,5 +25,6 @@ namespace Repositories.Services
         Task<List<QueueNotificationItem>> GetRegistrationNotificationsAsync();
         Task<List<QueueNotificationItem>> GetAttendanceNotificationsAsync();
         Task<bool> RemoveNotificationAsync(string notificationId);
+        Task<bool> RemoveAllNotificationsAsync();
     }
 }

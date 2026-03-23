@@ -174,6 +174,59 @@ namespace Repositories.Services
             return result;
         }
 
+        public async Task<vm_AttendenceSummary> GetEmployeeAttendanceSummaryAsync(int empId)
+        {
+            var documents = await SearchAttendanceByDateAsync(null, null, null, null);
+            var employeeDocuments = documents
+                .Where(x => x.EmpId == empId)
+                .OrderBy(x => x.AttendDate)
+                .ToList();
+
+            return new vm_AttendenceSummary
+            {
+                EmpId = empId,
+                Name = employeeDocuments.FirstOrDefault()?.EmployeeName,
+                Email = employeeDocuments.FirstOrDefault()?.EmployeeEmail,
+                PresentCount = employeeDocuments.Select(x => x.AttendDate.Date).Distinct().Count(),
+                TotalWorkingHours = employeeDocuments.Sum(x => x.WorkingHour),
+                LateInCount = employeeDocuments.Count(x => string.Equals(x.AttendStatus, "LateIn", StringComparison.OrdinalIgnoreCase)),
+                EarlyOutCount = employeeDocuments.Count(x => string.Equals(x.AttendStatus, "EarlyOut", StringComparison.OrdinalIgnoreCase))
+            };
+        }
+
+        public async Task<List<vm_AttendanceScheduler>> GetAttendanceSchedulerAsync(int empId)
+        {
+            var documents = await SearchAttendanceByDateAsync(null, null, null, null);
+
+            return documents
+                .Where(x => x.EmpId == empId)
+                .OrderBy(x => x.AttendDate)
+                .Select(x => new vm_AttendanceScheduler
+                {
+                    Id = x.AttendId,
+                    Title = "Attendance",
+                    Start = new DateTime(
+                        x.AttendDate.Year,
+                        x.AttendDate.Month,
+                        x.AttendDate.Day,
+                        x.ClockInHour,
+                        x.ClockInMin,
+                        0),
+                    End = new DateTime(
+                        x.AttendDate.Year,
+                        x.AttendDate.Month,
+                        x.AttendDate.Day,
+                        x.ClockOutHour,
+                        x.ClockOutMin,
+                        0),
+                    Status = x.AttendStatus,
+                    WorkType = x.WorkType,
+                    TaskType = x.RawTaskType,
+                    WorkingHour = x.WorkingHour
+                })
+                .ToList();
+        }
+
         public async Task<vm_EmployeeProgressReport> GetMonthlyReportAsync(int empId, int month, int year)
         {
             var start = new DateTime(year, month, 1);

@@ -14,11 +14,10 @@ namespace Repositories.Services
 {
     public class RabbitRegistration:IRabbitRegistration
     {
-        private class PendingQueueMessage
+        private class NotificationReference
         {
-            public ulong DeliveryTag { get; set; }
             public string QueueName { get; set; } = string.Empty;
-            public string NotificationType { get; set; } = string.Empty;
+            public string RawMessage { get; set; } = string.Empty;
         }
         private readonly string HostName;
         private readonly string VirtualHost;
@@ -30,11 +29,7 @@ namespace Repositories.Services
         private const string AttendanceQueueName = "AttendanceEvents";
         private readonly IAttedanceCacheService _attendanceCacheService;
         private readonly IRedisUserService _redisUserService;
-        private static readonly SemaphoreSlim QueueLock = new(1, 1);
-        private static readonly ConcurrentDictionary<string, PendingQueueMessage> PendingMessages = new();
-        private static IConnection? _adminConnection;
-        private static IChannel? _registrationChannel;
-        private static IChannel? _attendanceChannel;
+        private static readonly ConcurrentDictionary<string, NotificationReference> NotificationMap = new();
 
         public RabbitRegistration(IConfiguration config,IAttedanceCacheService attedanceCacheService,IRedisUserService redisUserService)
         {
@@ -145,30 +140,69 @@ namespace Repositories.Services
 
         public async Task<bool> RemoveNotificationAsync(string notificationId)
         {
-            await QueueLock.WaitAsync();
-            try
+            if (!NotificationMap.TryRemove(notificationId, out var notificationReference))
             {
-                if (!PendingMessages.TryRemove(notificationId, out var pendingMessage))
+                return false;
+            }
+
+            var queueName = notificationReference.QueueName;
+            var rawMessage = notificationReference.RawMessage;
+
+            using var connection = await GetConnection();
+            using var channel = await connection.CreateChannelAsync();
+            var queueState = await channel.QueueDeclareAsync(
+                queue: queueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
+
+            var messageCount = (int)queueState.MessageCount;
+            var removed = false;
+
+            for (var i = 0; i < messageCount; i++)
+            {
+                var result = await channel.BasicGetAsync(queue: queueName, autoAck: false);
+                if (result == null)
                 {
-                    return false;
+                    break;
                 }
 
-                var channel = pendingMessage.QueueName == RegistrationQueueName
-                    ? _registrationChannel
-                    : _attendanceChannel;
+                var currentRawMessage = Encoding.UTF8.GetString(result.Body.ToArray());
+                var shouldRemove = !removed && string.Equals(currentRawMessage, rawMessage, StringComparison.Ordinal);
 
-                if (channel == null)
+                await channel.BasicAckAsync(result.DeliveryTag, multiple: false);
+
+                if (shouldRemove)
                 {
-                    return false;
+                    removed = true;
+                    continue;
                 }
 
-                await channel.BasicAckAsync(pendingMessage.DeliveryTag, multiple: false);
-                return true;
+                await channel.BasicPublishAsync(
+                    exchange: string.Empty,
+                    routingKey: queueName,
+                    mandatory: false,
+                    basicProperties: new BasicProperties
+                    {
+                        Persistent = true
+                    },
+                    body: result.Body);
             }
-            finally
-            {
-                QueueLock.Release();
-            }
+
+            return removed;
+        }
+
+        public async Task<bool> RemoveAllNotificationsAsync()
+        {
+            using var connection = await GetConnection();
+            using var channel = await connection.CreateChannelAsync();
+
+            await ClearQueueAsync(channel, RegistrationQueueName);
+            await ClearQueueAsync(channel, AttendanceQueueName);
+            NotificationMap.Clear();
+
+            return true;
         }
 
         private async Task<List<QueueNotificationItem>> ReadQueueMessagesAsync(string queueName, string notificationType)
@@ -213,7 +247,12 @@ namespace Repositories.Services
 
         private async Task<QueueNotificationItem> BuildNotificationAsync(string queueName, string notificationType, string rawMessage)
         {
-            var id = BuildNotificationId(queueName, rawMessage);
+            var id = Guid.NewGuid().ToString("N");
+            NotificationMap[id] = new NotificationReference
+            {
+                QueueName = queueName,
+                RawMessage = rawMessage
+            };
 
             if (notificationType == "registration")
             {
@@ -296,6 +335,18 @@ namespace Repositories.Services
             return parsedTime.ToLocalTime().ToString("dd-MM-yyyy hh:mm tt");
         }
 
+        private static async Task ClearQueueAsync(IChannel channel, string queueName)
+        {
+            await channel.QueueDeclareAsync(
+                queue: queueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
+
+            await channel.QueuePurgeAsync(queueName);
+        }
+
         private static string BuildNotificationId(string queueName, string rawMessage)
         {
             return $"{queueName}|{Convert.ToHexString(Encoding.UTF8.GetBytes(rawMessage))}";
@@ -325,42 +376,5 @@ namespace Repositories.Services
             }
         }
 
-        // private async Task EnsureAdminChannelsAsync()
-        // {
-        //     if (_adminConnection != null && _registrationChannel != null && _attendanceChannel != null)
-        //     {
-        //         return;
-        //     }
-
-        //     _adminConnection = await GetConnection();
-        //     _registrationChannel = await _adminConnection.CreateChannelAsync();
-        //     _attendanceChannel = await _adminConnection.CreateChannelAsync();
-
-        //     await _registrationChannel.QueueDeclareAsync(
-        //         queue: RegistrationQueueName,
-        //         durable: true,
-        //         exclusive: false,
-        //         autoDelete: false,
-        //         arguments: null);
-
-        //     await _attendanceChannel.QueueDeclareAsync(
-        //         queue: AttendanceQueueName,
-        //         durable: true,
-        //         exclusive: false,
-        //         autoDelete: false,
-        //         arguments: null);
-        // }
     }
  }
-
-
-
-
-
-
-
-
-
-       
-      
-        

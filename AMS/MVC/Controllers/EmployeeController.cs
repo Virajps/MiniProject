@@ -457,7 +457,9 @@ namespace MyApp.Namespace
                 return Unauthorized(new { success = false, message = "Employee session not found." });
             }
 
-            var data = await _repo.GetEmployeeAttendanceSummary(empId.Value);
+            // Old DB path:
+            // var data = await _repo.GetEmployeeAttendanceSummary(empId.Value);
+            var data = await _elasticSearchService.GetEmployeeAttendanceSummaryAsync(empId.Value);
             return Ok(new { success = true, data = data ?? new vm_AttendenceSummary() });
         }
 
@@ -470,7 +472,9 @@ namespace MyApp.Namespace
                 return Unauthorized(new { success = false, message = "Employee session not found." });
             }
 
-            var data = await _repo.GetAttendanceScheduler1(empId.Value);
+            // Old DB path:
+            // var data = await _repo.GetAttendanceScheduler1(empId.Value);
+            var data = await _elasticSearchService.GetAttendanceSchedulerAsync(empId.Value);
 
             if (data != null)
             {
