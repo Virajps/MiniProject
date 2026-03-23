@@ -34,17 +34,12 @@ namespace Repositories.Services
                 Role = user.Role ?? "Employee",
                 Status = user.Status
             };
-            var employeeIdKey = GetEmployeeIdRedisKey(user.EmployeeId);
 
             var redisKey = GetRedisKey(user.Email);
             var payload = JsonSerializer.Serialize(cacheUser);
 
-            await _database.StringSetAsync(redisKey, payload, TimeSpan.FromMinutes(30));//Time for remove from cache4
-        
-        if (user.EmployeeId > 0)
-            {
-                await _database.StringSetAsync(employeeIdKey, payload, TimeSpan.FromMinutes(30));
-            }}
+            await _database.StringSetAsync(redisKey, payload, TimeSpan.FromMinutes(30));//Time for remove from cache
+        }
 
         public async Task<t_Employee?> GetUserAsync(string email)
         {
@@ -116,25 +111,6 @@ namespace Repositories.Services
         public async Task RemoveOtpVerified(string email)
         {
             await _database.KeyDeleteAsync($"OTP_VERIFIED_{email}");
-        }
-        public async Task RemoveUserAsync(string email)
-        {
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                return;
-            }
-
-            await _database.KeyDeleteAsync(GetRedisKey(email));
-        }
-
-        public async Task RemoveUserByIdAsync(int employeeId)
-        {
-            if (employeeId <= 0)
-            {
-                return;
-            }
-
-            await _database.KeyDeleteAsync(GetEmployeeIdRedisKey(employeeId));
         }
     }
 }
