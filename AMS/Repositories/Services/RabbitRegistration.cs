@@ -175,7 +175,6 @@ namespace Repositories.Services
 
                 if (shouldRemove)
                 {
-                    await ClearNotificationCacheAsync(queueName, rawMessage);
                     removed = true;
                     continue;
                 }
@@ -350,43 +349,9 @@ namespace Repositories.Services
 
         private static string BuildNotificationId(string queueName, string rawMessage)
         {
-            if (string.Equals(queueName, RegistrationQueueName, StringComparison.Ordinal))
-            {
-                using var document = JsonDocument.Parse(rawMessage);
-                var root = document.RootElement;
-
-                if (root.TryGetProperty("Email", out var emailElement))
-                {
-                    var email = emailElement.GetString();
-                    if (!string.IsNullOrWhiteSpace(email))
-                    {
-                        await _redisUserService.RemoveUserAsync(email);
-                    }
-                }
-
-                if (root.TryGetProperty("EmployeeId", out var employeeIdElement) &&
-                    employeeIdElement.TryGetInt32(out var registrationEmployeeId))
-                {
-                    await _redisUserService.RemoveUserByIdAsync(registrationEmployeeId);
-                }
-
-                return;
-            }
-
-            if (!string.Equals(queueName, AttendanceQueueName, StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            using var attendanceDocument = JsonDocument.Parse(rawMessage);
-            var attendanceRoot = attendanceDocument.RootElement;
-
-            if (!attendanceRoot.TryGetProperty("EmployeeId", out var employeeElement) ||
-                !employeeElement.TryGetInt32(out var employeeId))
-            {
-                return;
-            }
+            return $"{queueName}|{Convert.ToHexString(Encoding.UTF8.GetBytes(rawMessage))}";
         }
+
         private static string GetQueueNameFromNotificationId(string notificationId)
         {
             var parts = notificationId.Split('|', 2, StringSplitOptions.None);
