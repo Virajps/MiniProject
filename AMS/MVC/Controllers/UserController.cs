@@ -167,6 +167,19 @@ namespace MyApp.Namespace
         }
         public async Task<IActionResult> Logout()
         {
+            var employeeId = HttpContext.Session.GetInt32("EmployeeId");
+
+            if (employeeId.HasValue && employeeId.Value > 0)
+            {
+                var cachedUser = await _redis.GetUserByIdAsync(employeeId.Value);
+                if (!string.IsNullOrWhiteSpace(cachedUser?.Email))
+                {
+                    await _redis.RemoveUserAsync(cachedUser.Email);
+                }
+
+                await _redis.RemoveUserByIdAsync(employeeId.Value);
+            }
+
             HttpContext.Session.Clear();
             return RedirectToAction("Login", "User");
         }

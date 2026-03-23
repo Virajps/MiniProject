@@ -13,5 +13,6 @@ namespace Repositories.Interfaces
         Task RemoveClockInAsync(int employeeId);
         Task SetEmployeeNameAsync(int employeeId, string employeeName);
         Task<string?> GetEmployeeNameAsync(int employeeId);
+        Task RemoveEmployeeNameAsync(int employeeId);
     }
 }
