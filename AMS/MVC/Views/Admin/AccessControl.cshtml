@@ -127,7 +127,7 @@
                     type: "PUT",
                     data: {
                         EmployeeId: empId,
-                        Status: status
+                        attendStatus: status
                     },
                     success: function (res) {
                         if (res.success) {
@@ -142,12 +142,29 @@
                     }
                 });
             }
+        //search javascript
+        let timeout = null;
 
+        $("#searchBox").on("keyup", function () {
+            clearTimeout(timeout);
+
+            let value = $(this).val();
+
+            timeout = setTimeout(function () {
+
+                var grid = $("#grid").data("kendoGrid");
+
+                grid.dataSource.read({
+                    employeeName: value   // 👈 send to controller
+                });
+
+            }, 300); // debounce
+        });
         $(document).ready(function () {
             var dataSource = new kendo.data.DataSource({
                 transport: {
                     read: {
-                        url: "/Admin/GetEmployeeGridData",
+                        url: "/Admin/AccessControlData",
                         dataType: "json",
                         type: "GET",
                         data: function() {
@@ -181,9 +198,8 @@
                     { field: "employeeName", title: "Name", width: "200px" },
                     { field: "email", title: "Email", width: "220px" },
                     { field: "totalWorkingHours", title: "Total Hours", width: "120px" },
-                    { field: "employeeStatus", title: "Status", width: "100px" },
                     {
-                        title: "Toggle",
+                        title: "Status",
                         template: function(dataItem) {
                             var checked = dataItem.employeeStatus === "Active" ? "checked" : "";
                             return `

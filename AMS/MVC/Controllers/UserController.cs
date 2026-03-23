@@ -179,7 +179,6 @@ namespace MyApp.Namespace
 
                 await _redis.RemoveUserByIdAsync(employeeId.Value);
             }
-
             HttpContext.Session.Clear();
             return RedirectToAction("Login", "User");
         }

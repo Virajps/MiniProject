@@ -81,6 +81,7 @@ namespace Repositories.Services
             var cachedValue = await _database.StringGetAsync(GetEmployeeNameKey(employeeId));
             return cachedValue.IsNullOrEmpty ? null : cachedValue.ToString();
         }
+
         public async Task RemoveEmployeeNameAsync(int employeeId)
         {
             if (employeeId <= 0)
