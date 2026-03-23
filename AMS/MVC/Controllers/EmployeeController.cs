@@ -457,7 +457,9 @@ namespace MyApp.Namespace
                 return Unauthorized(new { success = false, message = "Employee session not found." });
             }
 
-            var data = await _repo.GetEmployeeAttendanceSummary(empId.Value);
+            // Old DB path:
+            // var data = await _repo.GetEmployeeAttendanceSummary(empId.Value);
+            var data = await _elasticSearchService.GetEmployeeAttendanceSummaryAsync(empId.Value);
             return Ok(new { success = true, data = data ?? new vm_AttendenceSummary() });
         }
 
@@ -470,7 +472,9 @@ namespace MyApp.Namespace
                 return Unauthorized(new { success = false, message = "Employee session not found." });
             }
 
-            var data = await _repo.GetAttendanceScheduler1(empId.Value);
+            // Old DB path:
+            // var data = await _repo.GetAttendanceScheduler1(empId.Value);
+            var data = await _elasticSearchService.GetAttendanceSchedulerAsync(empId.Value);
 
             if (data != null)
             {
@@ -479,6 +483,95 @@ namespace MyApp.Namespace
             else
             {
                 return BadRequest(new { success = false, message = "Failed to Load History" });
+            }
+        }
+
+        //------------- Kendo Grid Methods - ElasticSearch Data Binding ---------//
+
+        [HttpGet]
+        public async Task<IActionResult> GetAttendanceChartGridData(string type, DateTime date)
+        {
+            int? empId = HttpContext.Session.GetInt32("EmployeeId");
+            if (empId == null || empId <= 0)
+                return Unauthorized(new { success = false, message = "Employee session not found." });
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(type))
+                    type = "week";
+
+                if (date == default)
+                    date = DateTime.Today;
+
+                var chartData = await _elasticSearchService.GetAttendanceChartAsync(empId.Value, type, date);
+
+                return Json(new
+                {
+                    success = true,
+                    data = chartData?.ChartData ?? new List<vm_AttendanceChart>(),
+                    totalHours = chartData?.TotalHours ?? 0,
+                    lateInCount = chartData?.LateInCount ?? 0,
+                    earlyOutCount = chartData?.EarlyOutCount ?? 0
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTaskSummaryGridData(string type, DateTime date, int skip = 0, int take = 10)
+        {
+            int? empId = HttpContext.Session.GetInt32("EmployeeId");
+            if (empId == null || empId <= 0)
+                return Unauthorized(new { success = false, message = "Employee session not found." });
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(type))
+                    type = "month";
+
+                if (date == default)
+                    date = DateTime.Today;
+
+                var allData = await _elasticSearchService.GetEmployeeTaskSummaryAsync(empId.Value, type, date);
+                var total = allData.Count;
+                var data = allData.Skip(skip).Take(take).ToList();
+
+                return Json(new
+                {
+                    success = true,
+                    data = data,
+                    total = total
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTotalWorkingHoursGridData()
+        {
+            int? empId = HttpContext.Session.GetInt32("EmployeeId");
+            if (empId == null || empId <= 0)
+                return Unauthorized(new { success = false, message = "Employee session not found." });
+
+            try
+            {
+                var totalHours = await _elasticSearchService.GetTotalWorkingHoursAsync(empId.Value);
+
+                return Json(new
+                {
+                    success = true,
+                    totalWorkingHours = totalHours
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
             }
         }
     }

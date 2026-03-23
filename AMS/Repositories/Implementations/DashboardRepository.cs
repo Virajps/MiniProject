@@ -184,6 +184,7 @@ namespace Repositories.Implementations
                 using var cmd = new NpgsqlCommand(@"
                             SELECT
                         e.c_name,
+                        e.c_email,
 
                         COUNT(*) FILTER (WHERE a.c_attendstatus='Regular') AS present,
                         COUNT(*) FILTER (WHERE a.c_attendstatus='LateIn') AS late,
@@ -203,7 +204,7 @@ namespace Repositories.Implementations
                     AND EXTRACT(MONTH FROM a.c_attenddate) = @month
                     AND EXTRACT(YEAR FROM a.c_attenddate) = @year
 
-                    GROUP BY e.c_name, DATE_TRUNC('month', a.c_attenddate);
+                    GROUP BY e.c_name, e.c_email, DATE_TRUNC('month', a.c_attenddate);
                     ", _conn);
 
                 cmd.Parameters.AddWithValue("@emp", empId);
@@ -215,6 +216,7 @@ namespace Repositories.Implementations
                 if (await r.ReadAsync())
                 {
                     report.EmployeeName = r["c_name"].ToString();
+                    report.Email = r["c_email"]?.ToString();
                     report.Present = Convert.ToInt32(r["present"]);
                     report.LateIn = Convert.ToInt32(r["late"]);
                     report.EarlyOut = Convert.ToInt32(r["early"]);

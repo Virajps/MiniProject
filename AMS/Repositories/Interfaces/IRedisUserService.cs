@@ -13,5 +13,13 @@ namespace Repositories.Services
          Task<t_Employee?> GetUserByIdAsync(int employeeId);
          Task RemoveUserAsync(string email);
         Task RemoveUserByIdAsync(int employeeId);
+        public Task<t_Employee?> GetUserByIdAsync(int employeeId);
+        Task SetOTP(string email, string otp);
+        Task<string> GetOTP(string email);
+        Task RemoveOTP(string email);
+        Task SetOtpVerified(string email);
+        Task<bool> IsOtpVerified(string email);
+        Task RemoveOtpVerified(string email);
+
     }
 }

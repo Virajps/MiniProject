@@ -46,6 +46,76 @@ namespace Repositories.Services
       await smtp.SendMailAsync(message);
     }
 
+    public async Task SendOtpEmail(string toEmail, string userName, string otp)
+    {
+      var subject = "Attendance Management System - Password Reset OTP";
+      var logoUrl = "https://res.cloudinary.com/dku9eh2pw/image/upload/v1773915524/AMSLogo_bsxqo2.png";
+      var body = BuildOtpHtml(userName, otp, logoUrl);
+
+      ValidateOptions(toEmail, subject, body);
+
+      using var message = new MailMessage
+      {
+        From = new MailAddress(_settings.SenderEmail, _settings.SenderName),
+        Subject = subject,
+        Body = body,
+        IsBodyHtml = true,
+        BodyEncoding = System.Text.Encoding.UTF8,
+        SubjectEncoding = System.Text.Encoding.UTF8
+      };
+      var displayName = string.IsNullOrWhiteSpace(userName) ? toEmail : userName;
+      message.To.Add(new MailAddress(toEmail, displayName));
+
+      using var smtp = new SmtpClient(_settings.SmtpServer, _settings.Port)
+      {
+        EnableSsl = true,
+        UseDefaultCredentials = false,
+        DeliveryMethod = SmtpDeliveryMethod.Network,
+        Credentials = new NetworkCredential(_settings.SenderEmail, _settings.AppPassword)
+      };
+
+      await smtp.SendMailAsync(message);
+    }
+
+    public async Task SendEmailWithAttachment(string toEmail, string displayName, string subject, string htmlBody, byte[] attachmentBytes, string attachmentFileName, string attachmentContentType)
+    {
+      ValidateOptions(toEmail, subject, htmlBody);
+
+      if (attachmentBytes == null || attachmentBytes.Length == 0)
+        throw new InvalidOperationException("Attachment content is required.");
+      if (string.IsNullOrWhiteSpace(attachmentFileName))
+        throw new InvalidOperationException("Attachment file name is required.");
+      if (string.IsNullOrWhiteSpace(attachmentContentType))
+        throw new InvalidOperationException("Attachment content type is required.");
+
+      using var message = new MailMessage
+      {
+        From = new MailAddress(_settings.SenderEmail, _settings.SenderName),
+        Subject = subject,
+        Body = htmlBody,
+        IsBodyHtml = true,
+        BodyEncoding = System.Text.Encoding.UTF8,
+        SubjectEncoding = System.Text.Encoding.UTF8
+      };
+
+      var recipientName = string.IsNullOrWhiteSpace(displayName) ? toEmail : displayName;
+      message.To.Add(new MailAddress(toEmail, recipientName));
+
+      var attachmentStream = new System.IO.MemoryStream(attachmentBytes);
+      var attachment = new Attachment(attachmentStream, attachmentFileName, attachmentContentType);
+      message.Attachments.Add(attachment);
+
+      using var smtp = new SmtpClient(_settings.SmtpServer, _settings.Port)
+      {
+        EnableSsl = true,
+        UseDefaultCredentials = false,
+        DeliveryMethod = SmtpDeliveryMethod.Network,
+        Credentials = new NetworkCredential(_settings.SenderEmail, _settings.AppPassword)
+      };
+
+      await smtp.SendMailAsync(message);
+    }
+
     private void ValidateOptions(string toEmail, string subject, string body)
     {
       if (string.IsNullOrWhiteSpace(_settings.SmtpServer))
@@ -178,6 +248,76 @@ namespace Repositories.Services
 
         </body>
         </html>";
+    }
+
+    private static string BuildOtpHtml(string userName, string otp, string logoUrl)
+    {
+      var displayName = string.IsNullOrWhiteSpace(userName) ? "User" : userName;
+
+      return $@"
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=""UTF-8"">
+  <title>Password Reset OTP</title>
+</head>
+
+<body style=""margin:0; padding:0; background-color:#ffffff; font-family:Arial, sans-serif;"">
+
+<table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""padding:30px 10px;"">
+  <tr>
+    <td align=""center"">
+
+      <table width=""100%"" cellpadding=""0"" cellspacing=""0""
+             style=""max-width:600px; background:#ffffff; border-radius:10px; overflow:hidden; border:1px solid #e0e0e0;"">
+
+        <!-- HEADER -->
+        <tr>
+          <td style=""background:#039BE5; padding:25px; text-align:center;"">
+            <img src=""{logoUrl}"" width=""70"" style=""display:block; margin:0 auto 10px;"" />
+            <h2 style=""margin:0; color:#ffffff;"">Attendance Management System</h2>
+          </td>
+        </tr>
+
+        <!-- CONTENT -->
+        <tr>
+          <td style=""padding:30px 25px;"">
+
+            <h2 style=""margin-top:0; color:#039BE5;"">Hello {displayName},</h2>
+
+            <p style=""color:#555; font-size:15px; line-height:1.6;"">
+              Use the following OTP to reset your password. This OTP is valid for 5 minutes.
+            </p>
+
+            <div style=""text-align:center; margin:25px 0;"">
+              <span style=""display:inline-block; font-size:24px; letter-spacing:4px; font-weight:bold; color:#039BE5; padding:12px 20px; border:1px dashed #039BE5; border-radius:6px;"">
+                {otp}
+              </span>
+            </div>
+
+            <p style=""color:#777; font-size:13px; line-height:1.6;"">
+              If you did not request this, please ignore this email.
+            </p>
+
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td style=""background:#fafafa; text-align:center; padding:20px; font-size:12px; color:#777;"">
+            <p>Â© 2026 Attendance Management System</p>
+            <p>Casepoint Pvt. Ltd., Surat</p>
+          </td>
+        </tr>
+
+      </table>
+
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>";
     }
 
     public async Task SendStatusEmail(string toEmail, string userName, bool isActive)

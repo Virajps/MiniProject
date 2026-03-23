@@ -7,5 +7,7 @@ namespace Repositories.Interfaces
         public Task<t_Employee> LoginUser(vm_login login);
 
         public Task<int> RegisterUser(t_Employee employee);
+        Task<bool> UpdatePassword(string email, string password);
+        Task<t_Employee?> GetUserByEmail(string email);
     }
 }
