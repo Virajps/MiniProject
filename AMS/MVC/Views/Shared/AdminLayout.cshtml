@@ -233,41 +233,9 @@
             padding: 14px 18px;
             background: linear-gradient(90deg, #f0f9ff 0%, #ecfeff 100%);
             border-bottom: 1px solid #dbe7ef;
+            font-weight: 700;
             color: #1f2937;
             letter-spacing: 0.01em;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            font-weight: 700;
-        }
-
-        .notification-panel-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .clear-all-notifications {
-            border-radius: 999px;
-            padding: 6px 12px;
-            border: 1px solid #c7dff1;
-            background: #ffffff;
-            color: #0f6e96;
-            font-size: 12px;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .clear-all-notifications:hover {
-            background: #e6f6fe;
-            border-color: #98d4ef;
-            color: #0b5a7b;
-        }
-
-        .clear-all-notifications:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
         }
 
         #notificationList {
@@ -553,12 +521,7 @@
                             <span class="notification-count is-hidden" id="notificationCount">0</span>
                         </div>
                         <div class="notification-panel" id="notificationPopup">
-                            <div class="notification-panel-header">
-                                <span>Notifications</span>
-                                <div class="notification-panel-actions">
-                                    <button type="button" class="clear-all-notifications" id="clearAllNotificationsBtn">Remove All</button>
-                                </div>
-                            </div>
+                            <div class="notification-panel-header">Notifications</div>
                             <div class="card-body p-2" id="notificationList">
                                 <p class="mb-0">No notifications</p>
                             </div>
@@ -598,7 +561,6 @@
             $(function () {
                 var $shell = $(".admin-shell");
                 var $body = $("body");
-                var currentNotificationIds = [];
                 var getQueueMessagesUrl = '@Url.Action("GetQueueMessages", "Admin")';
                 var removeQueueMessageUrl = '@Url.Action("RemoveQueueMessage", "Admin")';
 
@@ -711,7 +673,6 @@
             function updateNotificationCount(total) {
                 const count = Number(total) || 0;
                 const badge = $("#notificationCount");
-                $("#clearAllNotificationsBtn").prop("disabled", count === 0);
                 if (count > 0) {
                     badge.text(count > 99 ? "99+" : count);
                     badge.removeClass("is-hidden");
@@ -731,68 +692,33 @@
 
                     const registrationMessages = response.registrationMessages || [];
                     const attendanceMessages = response.attendanceMessages || [];
-                    currentNotificationIds = registrationMessages
-                        .concat(attendanceMessages)
-                        .map(function (item) { return item.id; })
-                        .filter(function (id) { return !!id; });
                     renderNotificationList(registrationMessages, attendanceMessages);
                     updateNotificationCount(registrationMessages.length + attendanceMessages.length);
                 }).fail(function () {
-                    currentNotificationIds = [];
                     $("#notificationList").html('<div class="notification-empty">Unable to load notifications</div>');
                     updateNotificationCount(0);
                 });
             };
 
-            window.removeQueueMessage = function (notificationId, options) {
+            window.removeQueueMessage = function (notificationId) {
                 if (!notificationId) {
-                    return $.Deferred().resolve().promise();
+                    return;
                 }
-
-                const shouldReload = !options || options.reload !== false;
-
-                return $.ajax({
+                
+                $.ajax({
                     url: removeQueueMessageUrl,
                     type: "POST",
                     data: { notificationId: notificationId },
                     success: function (response) {
-                        if (response && response.success && shouldReload) {
+                        if (response && response.success) {
                             window.loadQueueMessages();
                         }
                     },
                     error: function () {
-                        if (shouldReload) {
-                            window.loadQueueMessages();
-                        }
+                        window.loadQueueMessages();
                     }
                 });
             };
-
-            $("#clearAllNotificationsBtn").on("click", function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                const notificationIds = currentNotificationIds.slice();
-                if (!notificationIds.length) {
-                    return;
-                }
-
-                const $button = $(this);
-                $button.prop("disabled", true).text("Removing...");
-
-                let sequence = $.Deferred().resolve().promise();
-
-                notificationIds.forEach(function (notificationId) {
-                    sequence = sequence.then(function () {
-                        return window.removeQueueMessage(notificationId, { reload: false });
-                    });
-                });
-
-                sequence.always(function () {
-                    $button.text("Remove All");
-                    window.loadQueueMessages();
-                });
-            });
 
             loadQueueMessages();
 
