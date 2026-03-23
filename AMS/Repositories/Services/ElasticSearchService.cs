@@ -174,6 +174,59 @@ namespace Repositories.Services
             return result;
         }
 
+        public async Task<vm_AttendenceSummary> GetEmployeeAttendanceSummaryAsync(int empId)
+        {
+            var documents = await SearchAttendanceByDateAsync(null, null, null, null);
+            var employeeDocuments = documents
+                .Where(x => x.EmpId == empId)
+                .OrderBy(x => x.AttendDate)
+                .ToList();
+
+            return new vm_AttendenceSummary
+            {
+                EmpId = empId,
+                Name = employeeDocuments.FirstOrDefault()?.EmployeeName,
+                Email = employeeDocuments.FirstOrDefault()?.EmployeeEmail,
+                PresentCount = employeeDocuments.Select(x => x.AttendDate.Date).Distinct().Count(),
+                TotalWorkingHours = employeeDocuments.Sum(x => x.WorkingHour),
+                LateInCount = employeeDocuments.Count(x => string.Equals(x.AttendStatus, "LateIn", StringComparison.OrdinalIgnoreCase)),
+                EarlyOutCount = employeeDocuments.Count(x => string.Equals(x.AttendStatus, "EarlyOut", StringComparison.OrdinalIgnoreCase))
+            };
+        }
+
+        public async Task<List<vm_AttendanceScheduler>> GetAttendanceSchedulerAsync(int empId)
+        {
+            var documents = await SearchAttendanceByDateAsync(null, null, null, null);
+
+            return documents
+                .Where(x => x.EmpId == empId)
+                .OrderBy(x => x.AttendDate)
+                .Select(x => new vm_AttendanceScheduler
+                {
+                    Id = x.AttendId,
+                    Title = "Attendance",
+                    Start = new DateTime(
+                        x.AttendDate.Year,
+                        x.AttendDate.Month,
+                        x.AttendDate.Day,
+                        x.ClockInHour,
+                        x.ClockInMin,
+                        0),
+                    End = new DateTime(
+                        x.AttendDate.Year,
+                        x.AttendDate.Month,
+                        x.AttendDate.Day,
+                        x.ClockOutHour,
+                        x.ClockOutMin,
+                        0),
+                    Status = x.AttendStatus,
+                    WorkType = x.WorkType,
+                    TaskType = x.RawTaskType,
+                    WorkingHour = x.WorkingHour
+                })
+                .ToList();
+        }
+
         public async Task<vm_EmployeeProgressReport> GetMonthlyReportAsync(int empId, int month, int year)
         {
             var start = new DateTime(year, month, 1);
@@ -184,6 +237,7 @@ namespace Repositories.Services
             {
                 EmployeeId = empId,
                 EmployeeName = documents.FirstOrDefault()?.EmployeeName,
+                Email = documents.FirstOrDefault()?.EmployeeEmail,
                 Present = documents.Count(x => string.Equals(x.AttendStatus, "Regular", StringComparison.OrdinalIgnoreCase)),
                 LateIn = documents.Count(x => string.Equals(x.AttendStatus, "LateIn", StringComparison.OrdinalIgnoreCase)),
                 EarlyOut = documents.Count(x => string.Equals(x.AttendStatus, "EarlyOut", StringComparison.OrdinalIgnoreCase)),
@@ -459,6 +513,54 @@ namespace Repositories.Services
                     Hours = hoursPerTask
                 };
             }
+        }
+
+        public async Task<AttendanceElasticDocument?> GetAttendanceByIdAsync(int attendId)
+        {
+            try
+            {
+                var response = await _client.GetAsync<AttendanceElasticDocument>(
+                    attendId,
+                    g => g.Index(_indexName));
+
+                return response.IsValidResponse ? response.Source : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task<int> ReIndexAttendanceWithEmployeeDataAsync(
+            IEnumerable<t_Attendance> attendances,
+            string employeeName,
+            string employeeEmail,
+            string employeeStatus)
+        {
+            var indexedCount = 0;
+
+            foreach (var attendance in attendances)
+            {
+                try
+                {
+                    var indexed = await IndexAttendanceAsync(
+                        attendance,
+                        employeeName,
+                        employeeEmail,
+                        employeeStatus);
+
+                    if (indexed)
+                    {
+                        indexedCount++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"ReIndexAttendanceWithEmployeeDataAsync Error for AttendId {attendance.AttendId}: {ex.Message}");
+                }
+            }
+
+            return indexedCount;
         }
     }
 }

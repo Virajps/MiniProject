@@ -4,6 +4,7 @@ namespace Repositories.Models
     {
         public int EmployeeId { get; set; }
         public string? EmployeeName { get; set; }
+        public string? Email { get; set; }
 
         public int Present { get; set; }
         public int LateIn { get; set; }

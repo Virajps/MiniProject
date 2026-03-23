@@ -1,309 +1,317 @@
 @{
     ViewData["Title"] = "Registration";
 }
-<div class="card shadow-lg">
-    <div class="card-body">
-        <h4 class="form-title text-center mb-4">Create Account</h4>
-        <div class="profile-container">
-            <div class="profile-wrapper">
-                <img id="preview" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" class="profile-img">
-                <div class="upload-icon">
-                    <span class="k-icon k-i-camera"></span>
+<div class="auth-shell">
+    <div class="auth-lottie">
+        <iframe class="auth-lottie-frame"
+                src="https://lottie.host/embed/a040e80d-5e45-4d1d-8a97-7ff32cecb8d7/ueUocxHR3k.lottie"
+                title="Registration animation" loading="lazy"></iframe>
+    </div>
+
+    <div class="card shadow-lg auth-card">
+        <div class="card-body">
+            <h4 class="form-title text-center mb-4">Create Account</h4>
+            <div class="profile-container">
+                <div class="profile-wrapper">
+                    <img id="preview" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" class="profile-img">
+                    <div class="upload-icon">
+                        <span class="k-icon k-i-camera"></span>
+                    </div>
                 </div>
+                <input id="profileUpload" type="file" name="ImageFile" />
+                <div id="imageError" class="text-danger k-form-error mt-2" style="font-size:14px;"></div>
             </div>
-            <input id="profileUpload" type="file" name="ImageFile"/>
-            <div id="imageError" class="text-danger k-form-error mt-2" style="font-size:14px;"></div>
-        </div>
 
-        <form id="form"></form>
+            <form id="form"></form>
 
-        <div class="text-center mt-3">
-            <span class="text-muted">Already have an account?</span>
-            <a asp-action="Login" asp-controller="User" class="redirect fw-bold text-decoration-none">Login</a>
+            <div class="text-center mt-3">
+                <span class="text-muted">Already have an account?</span>
+                <a asp-action="Login" asp-controller="User" class="redirect fw-bold text-decoration-none">Login</a>
+            </div>
         </div>
     </div>
 </div>
 
-@section Scripts{
+@section Scripts {
 
-<style>
-    .password-toggle-btn {
-        position: absolute;
-        top: 50%;
-        right: 8px;
-        transform: translateY(-50%);
-        border: none;
-        background: transparent;
-        padding: 2px;
-        color: #6b7280;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2;
-    }
-
-    .password-toggle-btn:hover {
-        color: #111827;
-    }
-
-    .password-toggle-btn svg {
-        width: 18px;
-        height: 18px;
-        display: block;
-    }
-
-    .password-with-toggle {
-        position: relative;
-    }
-
-    .password-with-toggle input {
-        padding-right: 38px !important;
-    }
-</style>
-
-<script>
-
-    $(document).ready(function(){
-
-        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
-        let imageSelected=false;
-
-        function getEyeIconMarkup(isVisible) {
-            if (isVisible) {
-                return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c5.2 0 9.3 3.3 10.8 8-0.5 1.5-1.3 2.9-2.4 4"></path><path d="M6.2 6.2C4.6 7.6 3.4 9.6 2.8 12c1.5 4.7 5.6 8 10.8 8 1.6 0 3.1-.3 4.4-.9"></path></svg>';
-            }
-
-            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+    <style>
+        .password-toggle-btn {
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            padding: 2px;
+            color: #6b7280;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
         }
 
-        function attachPasswordToggle(inputSelector) {
-            const $input = $(inputSelector).first();
-            if (!$input.length || $input.data("hasPasswordToggle")) {
-                return;
-            }
-
-            const $host = $input.closest(".k-input").length ? $input.closest(".k-input") : $input;
-            $host.addClass("password-with-toggle");
-
-            const $toggleBtn = $('<button type="button" class="password-toggle-btn" aria-label="Show password"></button>');
-            $toggleBtn.html(getEyeIconMarkup(false));
-
-            $toggleBtn.on("click", function () {
-                const isPassword = $input.attr("type") === "password";
-                const isVisible = isPassword;
-                $input.attr("type", isVisible ? "text" : "password");
-                $toggleBtn.html(getEyeIconMarkup(isVisible));
-                $toggleBtn.attr("aria-label", isVisible ? "Hide password" : "Show password");
-            });
-
-            $host.append($toggleBtn);
-            $input.data("hasPasswordToggle", true);
+        .password-toggle-btn:hover {
+            color: #111827;
         }
 
-        $("#profileUpload").kendoUpload({
+        .password-toggle-btn svg {
+            width: 18px;
+            height: 18px;
+            display: block;
+        }
 
-            async:{
-                autoUpload:false
-            },
-            multiple:false,
-            showFileList:false,
+        .password-with-toggle {
+            position: relative;
+        }
 
-            select:function(e){
-                const file=e.files[0].rawFile;
-                if(file){
-                    imageSelected=true;
-                    $("#imageError").text("");
-                    const reader=new FileReader();
+        .password-with-toggle input {
+            padding-right: 38px !important;
+        }
+    </style>
 
-                    reader.onload=function(event){
-                        $("#preview").attr("src",event.target.result);
-                    };
+    <script>
 
-                    reader.readAsDataURL(file);
+        $(document).ready(function () {
+
+            const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
+            let imageSelected = false;
+
+            function getEyeIconMarkup(isVisible) {
+                if (isVisible) {
+                    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 4.2A10.5 10.5 0 0 1 12 4c5.2 0 9.3 3.3 10.8 8-0.5 1.5-1.3 2.9-2.4 4"></path><path d="M6.2 6.2C4.6 7.6 3.4 9.6 2.8 12c1.5 4.7 5.6 8 10.8 8 1.6 0 3.1-.3 4.4-.9"></path></svg>';
                 }
+
+                return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
             }
 
-        });
-
-
-        $(".profile-wrapper").click(function(){
-            $("#profileUpload").click();
-        });
-
-
-
-        $("#form").kendoForm({
-
-            formData:{
-                name:"",
-                email:"",
-                password:"",
-                gender:""
-            },
-
-            validatable:{
-                validateOnBlur:true,
-                validationSummary:false,
-                errorTemplate:"<span class='k-form-error'>#:message#</span>",
-                rules: {
-                    passwordPolicy: function (input) {
-                        if (!input.is("[name='password']")) {
-                            return true;
-                        }
-
-                        const value = input.val() || "";
-                        if (!value) {
-                            return true;
-                        }
-
-                        return passwordPattern.test(value);
-                    }
-                },
-                messages: {
-                    passwordPolicy: "Password must be minimum 8 characters and include 1 uppercase, 1 lowercase, 1 digit, and 1 special character."
-                }
-            },
-
-            items:[
-
-                {
-                    field:"name",
-                    label:"Full Name",
-                    editor:"TextBox",
-                    validation:{
-                        required:{message:"Full name is required."}
-                    },
-                    editorOptions:{
-                        placeholder:"Enter your full name"
-                    }
-                },
-
-                {
-                    field:"email",
-                    label:"Email",
-                    editor:"TextBox",
-                    validation:{
-                        required:{message:"Email address is required."},
-                        email: { message: "Please enter a valid email address." }
-                    },
-                    editorOptions:{
-                        placeholder:"Enter your email address"
-                    }
-                },
-
-                {
-                    field:"password",
-                    label:"Password",
-                    editor:"TextBox",
-                    validation: {
-                        required: { message: "Password is required." },
-                    },
-                    attributes:{
-                        type:"password",
-                        placeholder:"Enter your password",
-                    }
-                },
-
-                {
-                    field: "Gender",
-                    label: "Gender:",
-                    editor: function (container, options) {
-                        const genderOptions = [
-                            { value: "Male", label: "Male" },
-                            { value: "Female", label: "Female" },
-                            { value: "Other", label: "Other" }
-                        ];
-                        $('<div class="k-radio-group"></div>')
-                        .appendTo(container);
-                        genderOptions.forEach((option,index) => {
-                            $('<label class="k-radio-label"></label>')
-                            .append(
-                            $('<input type="radio" style="margin:5px" name="' + options.field + '" value="' + option.value + '" '+(index === genderOptions.length - 1 ? 'required' : '')+' />')
-                            )
-                            .append(option.label)
-                            .appendTo(container.find(".k-radio-group"));
-                        });
-                    },
-                    
-                    validation: { required: { message: "Please select your gender." } },
-                },
-
-            ],
-
-            buttonsTemplate: '<button class="btn btn-primary submit-btn mt-3">Register</button>',
-
-            submit:function(e){
-                e.preventDefault();
-
-                if(!imageSelected){
-                    $("#imageError").text("Profile image is required");
+            function attachPasswordToggle(inputSelector) {
+                const $input = $(inputSelector).first();
+                if (!$input.length || $input.data("hasPasswordToggle")) {
                     return;
                 }
 
-                const RegisterData = new FormData();
+                const $host = $input.closest(".k-input").length ? $input.closest(".k-input") : $input;
+                $host.addClass("password-with-toggle");
 
-                RegisterData.append("Name", e.model.name);
-                RegisterData.append("Email", e.model.email);
-                RegisterData.append("Password", e.model.password);
-                RegisterData.append("Gender", e.model.Gender);
+                const $toggleBtn = $('<button type="button" class="password-toggle-btn" aria-label="Show password"></button>');
+                $toggleBtn.html(getEyeIconMarkup(false));
 
-                let upload=$("#profileUpload").data("kendoUpload");
-                let file=upload.getFiles()[0];
-
-                if (file) {
-                    RegisterData.append("ImageFile", file.rawFile); // Append the file
-                }
-
-                $.ajax({
-
-                    url:"/User/Register",
-                    type:"POST",
-                    data:RegisterData,
-                    contentType:false,
-                    processData:false,
-
-                    success:function(res){
-                        if(res.success){
-                            Swal.fire({
-                                title: "Success!",
-                                text: res.message,
-                                icon: "success"
-                            }).then( ()=>{
-                                window.location.href = "/User/Login";
-                            });
-                        }else{
-                            if (res.errors) {
-                                const allErrors = Object.values(res.errors).flat();
-                                const errorText = allErrors.length ? allErrors[0] : "Validation failed.";
-
-                                Swal.fire({
-                                    title: "Validation Error",
-                                    text: errorText,
-                                    icon: "error"
-                                });
-                                return;
-                            }
-
-                            Swal.fire({
-                                title: "Oops!",
-                                text: res.message,
-                                icon: "error"
-                            });
-                        }
-
-                    }
-
+                $toggleBtn.on("click", function () {
+                    const isPassword = $input.attr("type") === "password";
+                    const isVisible = isPassword;
+                    $input.attr("type", isVisible ? "text" : "password");
+                    $toggleBtn.html(getEyeIconMarkup(isVisible));
+                    $toggleBtn.attr("aria-label", isVisible ? "Hide password" : "Show password");
                 });
 
+                $host.append($toggleBtn);
+                $input.data("hasPasswordToggle", true);
             }
+
+            $("#profileUpload").kendoUpload({
+
+                async: {
+                    autoUpload: false
+                },
+                multiple: false,
+                showFileList: false,
+
+                select: function (e) {
+                    const file = e.files[0].rawFile;
+                    if (file) {
+                        imageSelected = true;
+                        $("#imageError").text("");
+                        const reader = new FileReader();
+
+                        reader.onload = function (event) {
+                            $("#preview").attr("src", event.target.result);
+                        };
+
+                        reader.readAsDataURL(file);
+                    }
+                }
+
+            });
+
+
+            $(".profile-wrapper").click(function () {
+                $("#profileUpload").click();
+            });
+
+
+
+            $("#form").kendoForm({
+
+                formData: {
+                    name: "",
+                    email: "",
+                    password: "",
+                    gender: ""
+                },
+
+                validatable: {
+                    validateOnBlur: true,
+                    validationSummary: false,
+                    errorTemplate: "<span class='k-form-error'>#:message#</span>",
+                    rules: {
+                        passwordPolicy: function (input) {
+                            if (!input.is("[name='password']")) {
+                                return true;
+                            }
+
+                            const value = input.val() || "";
+                            if (!value) {
+                                return true;
+                            }
+
+                            return passwordPattern.test(value);
+                        }
+                    },
+                    messages: {
+                        passwordPolicy: "Password must be minimum 8 characters and include 1 uppercase, 1 lowercase, 1 digit, and 1 special character."
+                    }
+                },
+
+                items: [
+
+                    {
+                        field: "name",
+                        label: "Full Name",
+                        editor: "TextBox",
+                        validation: {
+                            required: { message: "Full name is required." }
+                        },
+                        editorOptions: {
+                            placeholder: "Enter your full name"
+                        }
+                    },
+
+                    {
+                        field: "email",
+                        label: "Email",
+                        editor: "TextBox",
+                        validation: {
+                            required: { message: "Email address is required." },
+                            email: { message: "Please enter a valid email address." }
+                        },
+                        editorOptions: {
+                            placeholder: "Enter your email address"
+                        }
+                    },
+
+                    {
+                        field: "password",
+                        label: "Password",
+                        editor: "TextBox",
+                        validation: {
+                            required: { message: "Password is required." },
+                        },
+                        attributes: {
+                            type: "password",
+                            placeholder: "Enter your password",
+                        }
+                    },
+
+                    {
+                        field: "Gender",
+                        label: "Gender:",
+                        editor: function (container, options) {
+                            const genderOptions = [
+                                { value: "Male", label: "Male" },
+                                { value: "Female", label: "Female" },
+                                { value: "Other", label: "Other" }
+                            ];
+                            $('<div class="k-radio-group"></div>')
+                            .appendTo(container);
+                            genderOptions.forEach((option, index) => {
+                                $('<label class="k-radio-label"></label>')
+                                .append(
+                                $('<input type="radio" style="margin:5px" name="' + options.field + '" value="' + option.value + '" ' + (index === genderOptions.length - 1 ? 'required' : '') + ' />')
+                                )
+                                .append(option.label)
+                                .appendTo(container.find(".k-radio-group"));
+                            });
+                        },
+
+                        validation: { required: { message: "Please select your gender." } },
+                    },
+
+                ],
+
+                buttonsTemplate: '<button class="btn btn-primary submit-btn mt-3">Register</button>',
+
+                submit: function (e) {
+                    e.preventDefault();
+
+                    if (!imageSelected) {
+                        $("#imageError").text("Profile image is required");
+                        return;
+                    }
+
+                    const RegisterData = new FormData();
+
+                    RegisterData.append("Name", e.model.name);
+                    RegisterData.append("Email", e.model.email);
+                    RegisterData.append("Password", e.model.password);
+                    RegisterData.append("Gender", e.model.Gender);
+
+                    let upload = $("#profileUpload").data("kendoUpload");
+                    let file = upload.getFiles()[0];
+
+                    if (file) {
+                        RegisterData.append("ImageFile", file.rawFile); // Append the file
+                    }
+
+                    $.ajax({
+
+                        url: "/User/Register",
+                        type: "POST",
+                        data: RegisterData,
+                        contentType: false,
+                        processData: false,
+
+                        success: function (res) {
+                            if (res.success) {
+                                Swal.fire({
+                                    title: "Success!",
+                                    text: res.message,
+                                    icon: "success"
+                                }).then(() => {
+                                    window.location.href = "/User/Login";
+                                });
+                            } else {
+                                if (res.errors) {
+                                    const allErrors = Object.values(res.errors).flat();
+                                    const errorText = allErrors.length ? allErrors[0] : "Validation failed.";
+
+                                    Swal.fire({
+                                        title: "Validation Error",
+                                        text: errorText,
+                                        icon: "error"
+                                    });
+                                    return;
+                                }
+
+                                Swal.fire({
+                                    title: "Oops!",
+                                    text: res.message,
+                                    icon: "error"
+                                });
+                            }
+
+                        }
+
+                    });
+
+                }
+
+            });
+
+            attachPasswordToggle("input[name='password']");
 
         });
 
-        attachPasswordToggle("input[name='password']");
-
-    });
-
-</script>
+    </script>
 
 }
