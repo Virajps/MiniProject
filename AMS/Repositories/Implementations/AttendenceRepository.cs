@@ -1,6 +1,7 @@
 ﻿using Npgsql;
 using Repositories.Interfaces;
 using Repositories.Models;
+using Repositories.Services;
 
 
 namespace Repositories.Implementations
@@ -9,13 +10,19 @@ namespace Repositories.Implementations
     public class AttendenceRepository : IAttendenceInterface
     {
         private readonly NpgsqlConnection _conn;
+        private readonly IAttedanceCacheService _attendanceCacheService;
+        private readonly IEmployeeInterface _employee;
+        private readonly ElasticSearchService _elasticSearchService;
         private const int ClockInHourLimit = 9;
         private const int ClockInMinLimit = 15;
         private const int ClockOutHourLimit = 17;
         private const int ClockOutMinLimit = 0;
-        public AttendenceRepository(NpgsqlConnection conn)
+        public AttendenceRepository(NpgsqlConnection conn, IAttedanceCacheService attedanceCacheService,IEmployeeInterface employee, ElasticSearchService elasticSearchService)
         {
             _conn = conn;
+            _attendanceCacheService = attedanceCacheService;
+            _employee=employee;
+            _elasticSearchService = elasticSearchService;
         }
         public async Task<List<vm_TaskSummary>> GetEmployeeTaskSummary(int EmployeeId, string type, DateTime date)
         {
@@ -130,24 +137,68 @@ namespace Repositories.Implementations
             return summary;
         }
 
-        public async Task<t_Attendance> GetTodayAttendance(int empId)
+        public async Task<List<t_Attendance>> GetAllAttendance()
+        {
+            var list = new List<t_Attendance>();
+
+            try
+            {
+                await _conn.CloseAsync();
+
+                using var cmd = new NpgsqlCommand(
+                @"SELECT a.*, e.c_name FROM t_attendance a
+                LEFT JOIN t_employee e 
+                ON a.c_empid = e.c_empid
+                ORDER BY a.c_attenddate", _conn);
+
+                await _conn.OpenAsync();
+
+                using var r = await cmd.ExecuteReaderAsync();
+
+                while (await r.ReadAsync())
+                {
+                    list.Add(MapRow(r));
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
+
+            return list;
+        }
+
+        public async Task<t_Attendance?> GetTodayAttendance(int empId)
         {
             t_Attendance? att = null;
             try
             {
                 await _conn.CloseAsync();
                 using var cmd = new NpgsqlCommand(
-                    "SELECT * FROM t_attendance WHERE c_empid=@id AND c_attenddate=@today", _conn);
+                        @"SELECT a.*, e.c_name 
+                        FROM t_attendance a
+                        LEFT JOIN t_employee e 
+                        ON a.c_empid = e.c_empid
+                        WHERE a.c_empid = @id 
+                        AND a.c_attenddate = @today", _conn);
                 cmd.Parameters.AddWithValue("@id", empId);
                 cmd.Parameters.AddWithValue("@today", DateOnly.FromDateTime(DateTime.Today));
                 await _conn.OpenAsync();
                 using var r = await cmd.ExecuteReaderAsync();
                 if (await r.ReadAsync()) att = MapRow(r);
             }
-            catch (Exception ex) { Console.WriteLine(ex.Message); }
+            catch (Exception ex) { 
+                Console.WriteLine("get atten"+ex.Message);
+            }
             finally { await _conn.CloseAsync(); }
             return att;
         }
+
+
 
         private static t_Attendance MapRow(NpgsqlDataReader r)
         {
@@ -165,7 +216,8 @@ namespace Repositories.Implementations
                 WorkingHour = r["c_workinghour"] == DBNull.Value ? null : Convert.ToInt32(r["c_workinghour"]),
                 AttendStatus = r["c_attendstatus"]?.ToString(),
                 WorkType = r["c_worktype"]?.ToString(),
-                TaskType = r["c_tasktype"]?.ToString()
+                TaskType = r["c_tasktype"]?.ToString(),
+                EmployeeName = r["c_name"]?.ToString()
             };
         }
 
@@ -307,25 +359,19 @@ namespace Repositories.Implementations
         {
             try
             {
-                // Prevent double clock-in
                 var existing = await GetTodayAttendance(empId);
                 if (existing != null) return 0;
+
+                var cachedClockIn = await _attendanceCacheService.GetClockInAsync(empId);
+                if (cachedClockIn != null && cachedClockIn.ClockInTime.Date == DateTime.Today) return 0;
 
                 var now = DateTime.Now;
                 var status = IsLateIn(now.Hour, now.Minute) ? "LateIn" : "Regular";
 
-                await _conn.CloseAsync();
-                using var cmd = new NpgsqlCommand(
-                    @"INSERT INTO t_attendance (c_empid, c_attenddate, c_clockinhour, c_clockinmin, c_attendstatus, c_worktype)
-                      VALUES (@empid, @date, @hour, @min, @status, @wtype)", _conn);
-                cmd.Parameters.AddWithValue("@empid", empId);
-                cmd.Parameters.AddWithValue("@date", DateOnly.FromDateTime(DateTime.Today));
-                cmd.Parameters.AddWithValue("@hour", now.Hour);
-                cmd.Parameters.AddWithValue("@min", now.Minute);
-                cmd.Parameters.AddWithValue("@status", status);
-                cmd.Parameters.AddWithValue("@wtype", workType);
-                await _conn.OpenAsync();
-                await cmd.ExecuteNonQueryAsync();
+                var data = await _employee.GetUserById(empId);
+                var ename = data?.Name ?? "Unknown";
+
+                await _attendanceCacheService.SetClockInAsync(empId, ename, now, workType, status);
                 return 1;
             }
             catch (Exception ex) { Console.WriteLine("ClockIn Error: " + ex.Message); return -1; }
@@ -337,35 +383,106 @@ namespace Repositories.Implementations
             try
             {
                 var today = await GetTodayAttendance(empId);
-                if (today == null || today.ClockInHour == null) return 0;
-                if (today.ClockOutHour != null) return -2; // already clocked out
+                if (today != null)
+                {
+                    return today.ClockOutHour != null ? -2 : 0;
+                }
+
+                var cachedClockIn = await _attendanceCacheService.GetClockInAsync(empId);
+                if (cachedClockIn == null || cachedClockIn.ClockInTime.Date != DateTime.Today) return 0;
 
                 var now = DateTime.Now;
                 var taskJoined = string.Join(",", taskTypes);
-                var workHours = CalculateWorkingHours(today.ClockInHour.Value, today.ClockInMin ?? 0, now.Hour, now.Minute);
+                var workHours = CalculateWorkingHours(cachedClockIn.ClockInTime.Hour, cachedClockIn.ClockInTime.Minute, now.Hour, now.Minute);
                 var status = IsEarlyOut(now.Hour, now.Minute) ? "EarlyOut"
-                                : today.AttendStatus == "LateIn" ? "LateIn"
+                                : cachedClockIn.Status == "LateIn" ? "LateIn"
                                 : "Regular";
 
                 await _conn.CloseAsync();
                 using var cmd = new NpgsqlCommand(
-                    @"UPDATE t_attendance
-                      SET c_clockouthour=@coh, c_clockoutmin=@com,
-                          c_workinghour=@wh, c_attendstatus=@status, c_tasktype=@task
-                      WHERE c_empid=@id AND c_attenddate=@today", _conn);
+                    @"INSERT INTO t_attendance
+                      (c_empid, c_attenddate, c_clockinhour, c_clockinmin, c_clockouthour, c_clockoutmin, c_workinghour, c_attendstatus, c_worktype, c_tasktype)
+                      VALUES
+                      (@id, @today, @cih, @cim, @coh, @com, @wh, @status, @wtype, @task)", _conn);
+                cmd.Parameters.AddWithValue("@id", empId);
+                cmd.Parameters.AddWithValue("@today", DateOnly.FromDateTime(DateTime.Today));
+                cmd.Parameters.AddWithValue("@cih", cachedClockIn.ClockInTime.Hour);
+                cmd.Parameters.AddWithValue("@cim", cachedClockIn.ClockInTime.Minute);
                 cmd.Parameters.AddWithValue("@coh", now.Hour);
                 cmd.Parameters.AddWithValue("@com", now.Minute);
                 cmd.Parameters.AddWithValue("@wh", workHours);
                 cmd.Parameters.AddWithValue("@status", status);
+                cmd.Parameters.AddWithValue("@wtype", cachedClockIn.WorkType);
                 cmd.Parameters.AddWithValue("@task", taskJoined);
-                cmd.Parameters.AddWithValue("@id", empId);
-                cmd.Parameters.AddWithValue("@today", DateOnly.FromDateTime(DateTime.Today));
                 await _conn.OpenAsync();
                 await cmd.ExecuteNonQueryAsync();
+                await _attendanceCacheService.RemoveClockInAsync(empId);
+                
+                // Index the attendance record to ElasticSearch after successful ClockOut
+                try
+                {
+                    var attendanceRecord = await GetTodayAttendance(empId);
+                    if (attendanceRecord != null)
+                    {
+                        var empData = await _employee.GetUserById(empId);
+                        await _elasticSearchService.IndexAttendanceAsync(
+                            attendanceRecord,
+                            empData?.Name,
+                            empData?.Email,
+                            empData?.Status);
+                    }
+                }
+                catch (Exception esEx)
+                {
+                    Console.WriteLine("ES Indexing Error: " + esEx.Message);
+                    // Don't fail ClockOut if ES indexing fails
+                }
+                
                 return 1;
             }
             catch (Exception ex) { Console.WriteLine("ClockOut Error: " + ex.Message); return -1; }
             finally { await _conn.CloseAsync(); }
+        }
+
+        public async Task<bool> ReIndexEmployeeAttendanceAsync(int empId)
+        {
+            try
+            {
+                var empData = await _employee.GetUserById(empId);
+                if (empData == null) return false;
+
+                await _conn.CloseAsync();
+                using var cmd = new NpgsqlCommand(
+                    @"SELECT a.*, e.c_name FROM t_attendance a
+                    LEFT JOIN t_employee e ON a.c_empid = e.c_empid
+                    WHERE a.c_empid = @id
+                    ORDER BY a.c_attenddate", _conn);
+                
+                cmd.Parameters.AddWithValue("@id", empId);
+                await _conn.OpenAsync();
+                
+                using var r = await cmd.ExecuteReaderAsync();
+                while (await r.ReadAsync())
+                {
+                    var attendance = MapRow(r);
+                    await _elasticSearchService.IndexAttendanceAsync(
+                        attendance,
+                        empData.Name,
+                        empData.Email,
+                        empData.Status);
+                }
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("ReIndexEmployeeAttendanceAsync Error: " + ex.Message);
+                return false;
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
         }
 
         public async Task<List<vm_TaskSummary>> GetAllTaskSummary()
@@ -443,36 +560,27 @@ namespace Repositories.Implementations
 
                 await r.CloseAsync();
 
-                // Determine current month range
+                // Add all attendance records from the database (all months)
+                list.AddRange(attendanceMap.Values);
+
+                // Optionally, fill in "Absent" for missing days in the current month only
                 DateTime startMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-                DateTime endMonth = startMonth.AddMonths(1).AddDays(-1);
-
+                DateTime endMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month));
                 int idCounter = 100000;
-
                 for (DateTime d = startMonth; d <= endMonth; d = d.AddDays(1))
                 {
-                    // Skip Sunday (Holiday)
-                    if (d.DayOfWeek == DayOfWeek.Sunday)
-                        continue;
-
-                    if (attendanceMap.ContainsKey(d))
+                    if (d.DayOfWeek == DayOfWeek.Sunday) continue;
+                    if (!attendanceMap.ContainsKey(d) && d.Date <= DateTime.Today)
                     {
-                        list.Add(attendanceMap[d]);
-                    }
-                    else
-                    {
-                        if (d.Date <= DateTime.Today)
+                        list.Add(new vm_AttendanceScheduler
                         {
-                            list.Add(new vm_AttendanceScheduler
-                            {
-                                Id = idCounter++,
-                                Title = "Attendance",
-                                Start = d,
-                                End = d,
-                                Status = "Absent",
-                                WorkingHour = 0
-                            });
-                        }
+                            Id = idCounter++,
+                            Title = "Attendance",
+                            Start = d,
+                            End = d,
+                            Status = "Absent",
+                            WorkingHour = 0
+                        });
                     }
                 }
             }

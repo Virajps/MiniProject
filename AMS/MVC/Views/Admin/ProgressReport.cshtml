@@ -3,6 +3,7 @@
     Layout = "~/Views/Shared/AdminLayout.cshtml";
 }
 
+@section Styles {
 <style>
 .report-container {
     max-width: 1300px;
@@ -90,16 +91,28 @@ a.k-link{
     }
 }
 </style>
+}
 
 <div class="report-container">
 
     <div class="filters">
-        <input id="employee" />
-        <input id="month" />
-        <input id="year" />
-
-        <button id="generateReport" style="background-color: #0ea5e9;border: #0ea5e9;">Generate</button>
-        <button id="exportReport" style="background-color: #0ea5e9;border: #0ea5e9;">Export PDF</button>
+        <div style="flex:1; min-width:200px;">
+            <label style="display:block; margin-bottom:5px; font-weight:bold;">Select Employee</label>
+            <input id="employee" style="width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:6px;" />
+        </div>
+        <div style="min-width:140px;">
+            <label style="display:block; margin-bottom:5px; font-weight:bold;">Month</label>
+            <input id="month" style="width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:6px;" />
+        </div>
+        <div style="min-width:140px;">
+            <label style="display:block; margin-bottom:5px; font-weight:bold;">Year</label>
+            <input id="year" style="width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:6px;" />
+        </div>
+        <div style="align-self:flex-end;">
+            <button id="generateReport" style="background-color: #0ea5e9; color:white; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; margin-right:10px;">Generate</button>
+            <button id="exportReport" style="background-color: #0ea5e9; color:white; border:none; padding:8px 20px; border-radius:6px; cursor:pointer;">Export PDF</button>
+            <button id="sendReport" style="background-color: #0ea5e9; color:white; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; margin-left:10px;">Send PDF</button>
+        </div>
     </div>
 
     <!-- Export Area -->
@@ -128,106 +141,159 @@ $(document).ready(function () {
 
 
     function renderProfile(data) {
+        if (!data) {
+            $("#profileCard").html("<div>No data available</div>");
+            return;
+        }
+
+        const selectedEmployee = $("#employee").data("kendoDropDownList")?.dataItem();
+        const fallbackName = selectedEmployee?.name || $("#employee").data("kendoDropDownList")?.text();
+        const fallbackEmail = selectedEmployee?.email;
+
+        const name = data.employeeName || data.EmployeeName || fallbackName || 'Unknown';
+        const empId = data.employeeId || data.EmployeeId || 'N/A';
+        const email = data.email || data.Email || data.employeeEmail || data.EmployeeEmail || fallbackEmail || 'N/A';
+        const hours = data.totalWorkingHours || data.TotalWorkingHours || 0;
 
         $("#profileCard").html(`
             <div>
-                <h3>${data.employeeName}</h3>
-                <span>Employee ID : ${data.employeeId}</span>
+                <h3>${name}</h3>
+                <span>Employee ID : ${empId}</span>
+                <span style="display:block; margin-top:5px;">Email : ${email}</span>
             </div>
 
             <div>
-                <b>Total Working Hours :</b> ${data.totalWorkingHours}
+                <b>Total Working Hours :</b> ${hours}
             </div>
         `);
-
     }
 
-
-
     function renderCharts(data) {
+        if (!data) {
+            alert("No data to render");
+            return;
+        }
 
-        $("#attendanceChart").kendoChart({
-
-            title: { text: "Attendance Overview" },
-
-            chartArea: {
-                height: 400
-            },
-            seriesColors: ["#166f99", "#2185b4","#B0DFE5", "#319fd2", "#3eaee2", "#89CFF0"],
-            series: [{
-                type: "column",
-                overlay:{
-                gradient:"none"
-                },
-                data: [
-                    data.totalAttendance,
-                    data.present,
-                    data.lateIn,
-                    data.earlyOut,
-                    data.absent
-                ]
-            }],
-
-            categoryAxis: {
-                categories: ["Total Attendance","Regular", "Late", "EarlyOut", "Absent"]
+        try {
+            // Destroy existing charts if they exist
+            var attendanceChart = $("#attendanceChart").data("kendoChart");
+            if (attendanceChart) {
+                attendanceChart.destroy();
+            }
+            
+            var taskChart = $("#taskChart").data("kendoChart");
+            if (taskChart) {
+                taskChart.destroy();
             }
 
-        });
+            // Clear the divs
+            $("#attendanceChart").empty();
+            $("#taskChart").empty();
 
-        const taskData = data.tasks.map(t => ({
-            category: t.taskType,
-            value: t.hours
-        }));
+            $("#attendanceChart").kendoChart({
+                title: { text: "Attendance Overview" },
+                chartArea: { height: 400 },
+                seriesColors: ["#166f99", "#2185b4","#B0DFE5", "#319fd2", "#3eaee2", "#89CFF0"],
+                series: [{
+                    type: "column",
+                    overlay:{ gradient:"none" },
+                    data: [
+                        data.totalAttendance || 0,
+                        data.present || 0,
+                        data.lateIn || 0,
+                        data.earlyOut || 0,
+                        data.absent || 0
+                    ]
+                }],
+                categoryAxis: {
+                    categories: ["Total", "Regular", "Late", "Early Out", "Absent"]
+                }
+            });
 
-        $("#taskChart").kendoChart({
+            const taskData = (data.tasks && Array.isArray(data.tasks) && data.tasks.length > 0)
+                ? data.tasks.map(t => ({
+                    category: t.taskType || 'Unknown',
+                    value: t.hours || 0
+                }))
+                : [];
 
-            title: { text: "Task Distribution" },
-            seriesColors: ["#166f99", "#2185b4","#B0DFE5", "#319fd2", "#3eaee2", "#89CFF0"],
-            seriesDefaults: {
-                type: "donut",
-                startAngle: 300
-            },
-            series: [{
-                data: taskData,
-                overlay:{
-                gradient:"none"
-                },
-            }]
-
-        });
-
+            if (taskData.length > 0) {
+                $("#taskChart").kendoChart({
+                    title: { text: "Task Distribution" },
+                    seriesColors: ["#166f99", "#2185b4","#B0DFE5", "#319fd2", "#3eaee2", "#89CFF0"],
+                    seriesDefaults: {
+                        type: "donut",
+                        startAngle: 300
+                    },
+                    series: [{
+                        data: taskData,
+                        overlay:{ gradient:"none" }
+                    }]
+                });
+            } else {
+                $("#taskChart").html("<div style='padding:20px; text-align:center;'>No task data available</div>");
+            }
+        } catch (err) {
+            console.error("Error rendering charts:", err);
+            alert("Error rendering charts: " + err.message);
+        }
     }
 
 
 
     function renderGrids(data) {
+        if (!data) {
+            alert("No data to render");
+            return;
+        }
 
-        $("#summaryGrid").kendoGrid({
+        try {
+            // Destroy existing grids if they exist
+            var summaryGrid = $("#summaryGrid").data("kendoGrid");
+            if (summaryGrid) {
+                summaryGrid.destroy();
+            }
+            
+            var taskGrid = $("#taskGrid").data("kendoGrid");
+            if (taskGrid) {
+                taskGrid.destroy();
+            }
 
-            dataSource: [data],
+            $("#summaryGrid").kendoGrid({
+                dataSource: [{
+                    totalAttendance: data.totalAttendance || 0,
+                    present: data.present || 0,
+                    lateIn: data.lateIn || 0,
+                    earlyOut: data.earlyOut || 0,
+                    absent: data.absent || 0,
+                    totalWorkingHours: data.totalWorkingHours || 0
+                }],
+                columns: [
+                    { field: "totalAttendance", title: "Total Attendance" },
+                    { field: "present", title: "Regular" },
+                    { field: "lateIn", title: "Late" },
+                    { field: "earlyOut", title: "Early Out" },
+                    { field: "absent", title: "Absent" },
+                    { field: "totalWorkingHours", title: "Working Hours" }
+                ]
+            });
 
-            columns: [
-                { field: "totalAttendance", title: "Total Attendance" },
-                { field: "present", title: "Regular" },
-                { field: "lateIn", title: "Late" },
-                { field: "earlyOut", title: "Early Out" },
-                { field: "absent", title: "Absent" },
-                { field: "totalWorkingHours", title: "Working Hours" }
-            ]
-
-        });
-
-        $("#taskGrid").kendoGrid({
-
-            dataSource: data.tasks,
-
-            columns: [
-                { field: "taskType", title: "Task" },
-                { field: "hours", title: "Hours" }
-            ]
-
-        });
-
+            const taskDataSource = (data.tasks && Array.isArray(data.tasks)) ? data.tasks : [];
+            
+            $("#taskGrid").kendoGrid({
+                dataSource: taskDataSource,
+                columns: [
+                    { field: "taskType", title: "Task Type" },
+                    { field: "hours", title: "Hours" }
+                ],
+                noRecords: {
+                    template: "No tasks recorded"
+                }
+            });
+        } catch (err) {
+            console.error("Error rendering grids:", err);
+            alert("Error rendering grids: " + err.message);
+        }
     }
 
 
@@ -235,11 +301,11 @@ $(document).ready(function () {
     $("#employee").kendoDropDownList({
         optionLabel: "Select Employee",
         dataTextField: "name",
-        dataValueField: "employeeId",
+        dataValueField: "id",
         dataSource: {
             transport: {
                 read: {
-                    url: "/Admin/AccessControlData",
+                    url: "/Admin/GetEmployeeDropdownList",
                     dataType: "json"
                 }
             },
@@ -265,53 +331,86 @@ $(document).ready(function () {
             { text: "December", value: 12 }
         ],
         dataTextField: "text",
-        dataValueField: "value"
+        dataValueField: "value",
+        value: new Date().getMonth() + 1
     });
 
     $("#year").kendoDropDownList({
-        dataSource: [2024, 2025, 2026]
+        dataSource: [2024, 2025, 2026],
+        value: new Date().getFullYear()
     });
 
 
 
     $("#generateReport").kendoButton({
-
         themeColor: "primary",
-
         click: function () {
-
             const emp = $("#employee").data("kendoDropDownList").value();
             const month = $("#month").data("kendoDropDownList").value();
             const year = $("#year").data("kendoDropDownList").value();
 
-            $.get("/Admin/GetEmployeeProgress",
-                { empId: emp, month: month, year: year },
+            if (!emp) {
+                alert("Please select an employee");
+                return;
+            }
 
-                function (data) {
+            if (!month || !year) {
+                alert("Please select month and year");
+                return;
+            }
 
-                    renderProfile(data);
-                    renderCharts(data);
-                    renderGrids(data);
+            $.ajax({
+                url: "/Admin/GetEmployeeProgress",
+                type: "GET",
+                data: { empId: emp, month: month, year: year },
+                success: function (data) {
+                    console.log("Response Data:", data);
+                    
+                    if (!data || !data.success) {
+                        alert("Failed to load report data: " + (data?.message || "Unknown error"));
+                        console.error("Response not successful:", data);
+                        return;
+                    }
 
+                    if (!data.data) {
+                        alert("No data found for selected employee");
+                        console.warn("No data in response:", data);
+                        return;
+                    }
+
+                    const reportData = data.data;
+                    console.log("Report Data to Render:", reportData);
+                    
+                    try {
+                        renderProfile(reportData);
+                        renderCharts(reportData);
+                        renderGrids(reportData);
+                    } catch (err) {
+                        console.error("Error rendering report:", err);
+                        alert("Error rendering report: " + err.message);
+                    }
+                },
+                error: function (xhr) {
+                    console.error("AJAX Error:", xhr);
+                    alert("Error loading report: " + (xhr.responseJSON?.message || xhr.statusText || "Server error"));
                 }
-            );
-
+            });
         }
-
     });
-
-
 
     $("#exportReport").kendoButton({
         themeColor: "primary",
-
         click: function () {
-
             const emp = $("#employee").data("kendoDropDownList").value();
             const month = $("#month").data("kendoDropDownList").value();
             const year = $("#year").data("kendoDropDownList").value();
 
-            const fileName = emp + "_" + month + "_" + year + "_progress_report.pdf";
+            if (!emp || !month || !year) {
+                alert("Please generate report first");
+                return;
+            }
+
+            const fileName = "report_" + emp + "_" + month + "_" + year + ".pdf";
 
             kendo.drawing.drawDOM($("#exportArea"), {
                 paperSize: "A4",
@@ -321,8 +420,74 @@ $(document).ready(function () {
                 forcePageBreak: ".page-break"
             }).then(function (group) {
                 kendo.drawing.pdf.saveAs(group, fileName);
+            }).catch(function(err) {
+                alert("Error generating PDF: " + err);
             });
+        }
+    });
 
+    $("#sendReport").kendoButton({
+        themeColor: "primary",
+        click: function () {
+            const emp = $("#employee").data("kendoDropDownList").value();
+            const month = $("#month").data("kendoDropDownList").value();
+            const year = $("#year").data("kendoDropDownList").value();
+
+            if (!emp || !month || !year) {
+                alert("Please generate report first");
+                return;
+            }
+
+            const fileName = "report_" + emp + "_" + month + "_" + year + ".pdf";
+            const sendButton = $("#sendReport").data("kendoButton");
+            if (sendButton) {
+                sendButton.enable(false);
+            }
+
+            kendo.drawing.drawDOM($("#exportArea"), {
+                paperSize: "A4",
+                margin: "1cm",
+                scale: 0.6,
+                landscape: true,
+                forcePageBreak: ".page-break"
+            }).then(function (group) {
+                return kendo.drawing.exportPDF(group);
+            }).then(function (dataUri) {
+                const base64 = (dataUri || "").split(",")[1];
+
+                if (!base64) {
+                    throw new Error("PDF generation failed");
+                }
+
+                return $.ajax({
+                    url: "/Admin/SendProgressReportEmail",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        empId: emp,
+                        month: month,
+                        year: year,
+                        fileName: fileName,
+                        pdfBase64: base64
+                    })
+                });
+            }).done(function (res) {
+                if (res && res.success) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "Sent Successfully",
+                        text: "Report sent to employee email successfully."
+                    });
+                } else {
+                    alert("Failed to send report: " + (res?.message || "Unknown error"));
+                }
+            }).fail(function (xhr) {
+                alert("Failed to send report: " + (xhr.responseJSON?.message || xhr.statusText || "Server error"));
+            }).always(function () {
+                if (sendButton) {
+                    sendButton.enable(true);
+                }
+            });
         }
     });
 

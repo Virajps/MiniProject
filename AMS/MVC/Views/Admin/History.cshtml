@@ -3,6 +3,7 @@
     Layout = "~/Views/Shared/AdminLayout.cshtml";
 }
 
+@section Styles {
 <style>
     .scheduler-container{
         max-width:1350px;
@@ -119,9 +120,21 @@
     }
 
 </style>
+}
 <div class="scheduler-container">
 
-    <select id="employeeSelect" style="width:300px"></select>
+    <div style="margin-bottom:20px; display:flex; gap:10px; align-items:center;">
+        <div class="row">
+            <div class="col">
+                <select id="employeeSelect"
+                        style="width:300px; padding:8px 12px; border-radius:8px; border:1px solid #ccc; font-size:14px;"></select>
+            </div>
+            <div class="col">
+                <input id="searchEmployee" type="text" placeholder="Search employee..."
+                       style="padding:8px 12px; border:1px solid #ccc; border-radius:6px; width:250px; font-size:14px;" />
+            </div>
+        </div>
+    </div>
 
     <div style="margin-bottom:10px;font-size:13px;font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;">
         <span style="background:#4CAF50;padding:5px 10px;border-radius:6px;color:white;">Regular</span>
@@ -134,23 +147,131 @@
 
 @section Scripts {
 <script>
-    $(document).ready(function () {
+    let schedulerInitialized = false;
+    let currentSchedulerDate = new Date();
 
-        $.get("/Admin/AccessControlData", function (res) {
-            if (res.success) {
-                res.data.forEach(emp => {
+    $(document).ready(function () {
+        let employees = [];
+
+        $.get("/Admin/GetEmployeeDropdownList", function (res) {
+            if (res.success && res.data) {
+                employees = res.data;
+                
+                employees.forEach(emp => {
                     $("#employeeSelect").append(
-                        `<option value="${emp.employeeId}">${emp.name}</option>`
+                        `<option value="${emp.id}">${emp.name}</option>`
                     );
                 });
-                $("#employeeSelect").trigger("change");
+
+                if (employees.length > 0) {
+                    initializeScheduler(employees[0].id);
+                    $("#employeeSelect").val(employees[0].id);
+                }
+            }
+        });
+
+        // Search functionality
+        $("#searchEmployee").on("keyup", function() {
+            let searchTerm = $(this).val().toLowerCase();
+            $("#employeeSelect").empty();
+            
+            employees
+                .filter(emp => (emp.name || "").toLowerCase().includes(searchTerm))
+                .forEach(emp => {
+                    $("#employeeSelect").append(
+                        `<option value="${emp.id}">${emp.name}</option>`
+                    );
+                });
+            
+            if ($("#employeeSelect").find("option").length > 0) {
+                $("#employeeSelect").val($("#employeeSelect").find("option:first").val()).trigger("change");
+            }
+        });
+
+        // On dropdown change, reload scheduler data
+        $("#employeeSelect").change(function () {
+            if (schedulerInitialized) {
+                let scheduler = $("#scheduler").data("kendoScheduler");
+                if (scheduler) {
+                    scheduler.dataSource.read();
+                }
             }
         });
     });
 
-    $("#scheduler").kendoScheduler({
+    function toDateKey(dateValue) {
+        const d = new Date(dateValue);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+    }
+
+    function buildMonthStatusData(rawEvents, monthDate) {
+        const list = Array.isArray(rawEvents) ? rawEvents : [];
+        const eventMap = {};
+        const today = new Date();
+        const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const year = monthDate.getFullYear();
+        const month = monthDate.getMonth();
+        const totalDays = new Date(year, month + 1, 0).getDate();
+        const result = [];
+
+        list.forEach(function (item) {
+            const sourceDate = new Date(item.start || item.Start);
+            if (sourceDate.getFullYear() !== year || sourceDate.getMonth() !== month) {
+                return;
+            }
+
+            const key = toDateKey(sourceDate);
+            eventMap[key] = item;
+        });
+
+        for (let day = 1; day <= totalDays; day++) {
+            const date = new Date(year, month, day);
+            const weekDay = date.getDay();
+
+            if (weekDay === 0 || date > todayOnly) {
+                continue;
+            }
+
+            const key = toDateKey(date);
+            const existing = eventMap[key];
+
+            if (existing) {
+                const startValue = new Date(year, month, day, 12, 0, 0);
+                const endValue = new Date(year, month, day, 12, 30, 0);
+
+                result.push({
+                    id: existing.id || existing.Id || `${key}-attendance`,
+                    title: existing.title || existing.Title || "Attendance",
+                    start: startValue,
+                    end: endValue,
+                    status: existing.status || existing.Status || "Regular",
+                    workingHour: existing.workingHour || existing.WorkingHour || 0,
+                    isAllDay: false
+                });
+            } else {
+                result.push({
+                    id: `${key}-absent`,
+                    title: "Attendance",
+                    start: new Date(year, month, day, 12, 0, 0),
+                    end: new Date(year, month, day, 12, 30, 0),
+                    status: "Absent",
+                    workingHour: 0,
+                    isAllDay: false
+                });
+            }
+        }
+
+        return result;
+    }
+
+    function initializeScheduler(empId) {
+        $("#scheduler").kendoScheduler({
             date: new Date(),
             height: 600,
+            editable: false,
             views: [
                 { type: "month", selected: true },
                 "week",
@@ -158,17 +279,22 @@
             ],
             dataSource: {
                 transport: {
-                    read: {
-                        url: "/Admin/GetAttendanceScheduler",
-                        dataType: "json"
+                    read: function (options) {
+                        $.ajax({
+                            url: "/Admin/GetAttendanceScheduler",
+                            dataType: "json",
+                            type: "GET",
+                            data: {
+                                empId: $("#employeeSelect").val() || empId
+                            },
+                            success: function (response) {
+                                options.success(buildMonthStatusData(response, currentSchedulerDate));
+                            },
+                            error: function (xhr) {
+                                options.error(xhr);
+                            }
+                        });
                     },
-                    parameterMap: function(options, operation){
-                        if(operation === "read"){
-                            return {
-                                empId: $("#employeeSelect").val()
-                            };
-                        }
-                    }
                 },
                 schema: {
                     model: {
@@ -185,17 +311,26 @@
                     }
                 }
             },
+            navigate: function (e) {
+                currentSchedulerDate = e.date;
+                $("#scheduler").data("kendoScheduler").dataSource.read();
+            },
             eventTemplate: `
                 <div class="attendance-event #= status #">
                     <span>#= status #</span>
                 </div>
-                `
+            `
         });
-
-    $("#employeeSelect").change(function () {
-        $("#scheduler")
-            .data("kendoScheduler")
-            .dataSource.read();
-    });
+        
+        schedulerInitialized = true;
+        
+        // Initial load
+        setTimeout(function() {
+            let scheduler = $("#scheduler").data("kendoScheduler");
+            if (scheduler) {
+                scheduler.dataSource.read();
+            }
+        }, 100);
+    }
 </script>
 }
