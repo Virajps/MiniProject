@@ -4,6 +4,7 @@
     Layout = "~/Views/Shared/AdminLayout.cshtml";
 }
 
+@section Styles {
 <style>
 .dashboard-container{
     max-width:1350px;
@@ -253,6 +254,7 @@ a.k-link:hover{
     color:#374151 !important;
 }
 </style>
+}
 <div class="dashboard-container">
     <div class="row g-3">
 
@@ -318,6 +320,10 @@ a.k-link:hover{
         <div class="col-lg-6">
             <div class="dashboard-card">
                 <h5 class="card-title">Recent Attendance</h5>
+                <div style="margin-bottom:12px;">
+                    <input id="dashboardSearchEmployee" type="text" placeholder="Search by name..." 
+                        style="padding:8px 12px; border:1px solid #ccc; border-radius:6px; width:100%; font-size:14px; box-sizing:border-box;" />
+                </div>
                 <div id="attendanceGrid"></div>
             </div>
         </div>
@@ -361,42 +367,52 @@ a.k-link:hover{
             }]
         });
 
-        var attendance = @Html.Raw(Json.Serialize(Model.RecentAttendance));
-
-        $("#attendanceGrid").kendoGrid({
-            dataSource:{
-                data:attendance,
-                pageSize:5
-            },
-            height:350,
-            sortable:true,
-            pageable:{
-                refresh:true,
-                pageSizes:[5,10,20]
-            },
-            columns:[
-                { field:"employeeName", title:"Employee", width:150 },
-
-                { field:"checkIn", title:"Check In", width:120 },
-
-                { field:"checkOut", title:"Check Out", width:120 },
-
-                { field:"workingHour", title:"Working Hour", width:120 },
-
-                {
-                    field:"status",
-                    title:"Status",
-                    width:130,
-                    template:function(data){
-                        let color="badge-regular";
-
-                        if(data.status==="LateIn") color="badge-late";
-                        if(data.status==="EarlyOut") color="badge-early";
-
-                        return `<span class="status-badge ${color}">${data.status}</span>`;
+        // Initialize Kendo Grid with ElasticSearch data
+        var dataSource = new kendo.data.DataSource({
+            transport: {
+                read: {
+                    url: "/Admin/GetEmployeeGridData",
+                    dataType: "json",
+                    type: "GET",
+                    data: function() {
+                        return {
+                            employeeName: $("#dashboardSearchEmployee").val(),
+                            month: new Date().getMonth() + 1,
+                            year: new Date().getFullYear(),
+                            skip: 0,
+                            take: 5
+                        };
                     }
                 }
+            },
+            schema: {
+                data: "data",
+                total: "total"
+            },
+            pageSize: 5,
+            serverPaging: true
+        });
+
+        var grid = $("#attendanceGrid").kendoGrid({
+            dataSource: dataSource,
+            height: 350,
+            sortable: true,
+            pageable: {
+                refresh: true,
+                pageSizes: [5, 10, 20]
+            },
+            columns: [
+                { field: "employeeName", title: "Employee", width: 150 },
+                { field: "totalWorkingHours", title: "Total Hours", width: 120 },
+                { field: "lateInCount", title: "Late In", width: 100 },
+                { field: "earlyOutCount", title: "Early Out", width: 100 },
+                { field: "employeeStatus", title: "Status", width: 100 }
             ]
+        }).data("kendoGrid");
+
+        // Add search functionality
+        $("#dashboardSearchEmployee").on("keyup change", function() {
+            grid.dataSource.read();
         });
 
         function resizeKendoWidgets(){

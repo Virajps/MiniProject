@@ -3,6 +3,7 @@
     Layout = "~/Views/Shared/AdminLayout.cshtml";
 }
 
+@section Styles {
 <style>
     #grid{
         max-width:1350px;
@@ -105,8 +106,17 @@
         color:#374151 !important;
     }
 </style>
+}
 
-<div id="grid"></div>
+<div style="max-width:1350px; margin:20px;">
+    <div style="margin-bottom:20px; display:flex; gap:10px; align-items:center;">
+        <input id="searchEmployee" type="text" placeholder="Search by employee name..." 
+            style="padding:8px 12px; border:1px solid #ccc; border-radius:6px; width:300px; font-size:14px;" />
+        <button id="clearSearch" style="padding:8px 16px; background:#999; color:white; border:none; border-radius:6px; cursor:pointer;">Clear</button>
+    </div>
+    <div id="grid"></div>
+</div>
+
 @section Scripts{
     <script>
 
@@ -117,7 +127,7 @@
                     type: "PUT",
                     data: {
                         EmployeeId: empId,
-                        Status: status
+                        attendStatus: status
                     },
                     success: function (res) {
                         if (res.success) {
@@ -132,40 +142,66 @@
                     }
                 });
             }
+        //search javascript
+        let timeout = null;
 
+        $("#searchBox").on("keyup", function () {
+            clearTimeout(timeout);
+
+            let value = $(this).val();
+
+            timeout = setTimeout(function () {
+
+                var grid = $("#grid").data("kendoGrid");
+
+                grid.dataSource.read({
+                    employeeName: value   // 👈 send to controller
+                });
+
+            }, 300); // debounce
+        });
         $(document).ready(function () {
-            $("#grid").kendoGrid({
-                dataSource: {
-                    transport: {
-                        read: {
-                            url: "/Admin/AccessControlData",
-                            dataType: "json"
+            var dataSource = new kendo.data.DataSource({
+                transport: {
+                    read: {
+                        url: "/Admin/AccessControlData",
+                        dataType: "json",
+                        type: "GET",
+                        data: function() {
+                            return {
+                                employeeName: $("#searchEmployee").val(),
+                                skip: 0,
+                                take: 10
+                            };
                         }
-                    },
-                    schema: {
-                        data: "data"
-                    },
-                    pageSize: 10,
-
+                    }
                 },
-                sortable:true,
-                filterable: true,
+                schema: {
+                    data: "data",
+                    total: "total"
+                },
+                pageSize: 10,
+                serverPaging: true
+            });
+
+            var grid = $("#grid").kendoGrid({
+                dataSource: dataSource,
+                sortable: true,
+                filterable: false,
                 height: 550,
-                pageable:{
-                    refresh:true,
-                    pageSizes:[5,10,20]
+                pageable: {
+                    refresh: true,
+                    pageSizes: [5, 10, 20]
                 },
                 columns: [
                     { field: "employeeId", title: "Employee ID", width: "120px" },
-                    { field: "name", title: "Name" },
-                    { field: "email", title: "Email" },
-                    { field: "totalHour", title: "Total Working Hour" },
+                    { field: "employeeName", title: "Name", width: "200px" },
+                    { field: "email", title: "Email", width: "220px" },
+                    { field: "totalWorkingHours", title: "Total Hours", width: "120px" },
                     {
                         title: "Status",
-                        template: function(dataItem){
-
-                            var checked = dataItem.status === "Active" ? "checked" : "";
-
+                        template: function(dataItem) {
+                            var checked = dataItem.employeeStatus === "Active" ? "checked" : "";
                             return `
                             <label class="switch">
                                 <input type="checkbox" ${checked}
@@ -173,9 +209,19 @@
                                 <span class="slider"></span>
                             </label>`;
                         },
-                        width: "150px"
+                        width: "100px"
                     }
                 ]
+            }).data("kendoGrid");
+
+            // Search functionality
+            $("#searchEmployee").on("keyup", function() {
+                grid.dataSource.read();
+            });
+
+            $("#clearSearch").click(function() {
+                $("#searchEmployee").val("");
+                grid.dataSource.read();
             });
         });
     </script>
