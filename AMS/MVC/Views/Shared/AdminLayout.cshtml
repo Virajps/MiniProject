@@ -236,9 +236,45 @@
             padding: 14px 18px;
             background: linear-gradient(90deg, #f0f9ff 0%, #ecfeff 100%);
             border-bottom: 1px solid #dbe7ef;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .notification-panel-title {
             font-weight: 700;
             color: #1f2937;
             letter-spacing: 0.01em;
+        }
+
+        .notification-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .clear-all-notifications {
+            border-radius: 999px;
+            padding: 6px 12px;
+            border: 1px solid #c7d8e6;
+            color: #1e3a5f;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+            transition: all 0.18s ease;
+        }
+
+        .clear-all-notifications:hover {
+            border-color: #9fc2da;
+            background: #ffffff;
+            color: #0f2f4d;
+        }
+
+        .clear-all-notifications:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         #notificationList {
@@ -524,7 +560,12 @@
                             <span class="notification-count is-hidden" id="notificationCount">0</span>
                         </div>
                         <div class="notification-panel" id="notificationPopup">
-                            <div class="notification-panel-header">Notifications</div>
+                            <div class="notification-panel-header">
+                                <span class="notification-panel-title">Notifications</span>
+                                <div class="notification-actions">
+                                    <button type="button" class="clear-all-notifications" id="clearAllNotificationsBtn">Remove All</button>
+                                </div>
+                            </div>
                             <div class="card-body p-2" id="notificationList">
                                 <p class="mb-0">No notifications</p>
                             </div>
@@ -560,12 +601,14 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/lib/kendo/kendo.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
             $(function () {
                 var $shell = $(".admin-shell");
                 var $body = $("body");
                 var getQueueMessagesUrl = '@Url.Action("GetQueueMessages", "Admin")';
                 var removeQueueMessageUrl = '@Url.Action("RemoveQueueMessage", "Admin")';
+                var removeAllQueueMessagesUrl = '@Url.Action("RemoveAllQueueMessages", "Admin")';
 
 
                 $("#adminSidebarPanelBar").kendoPanelBar({
@@ -676,12 +719,15 @@
             function updateNotificationCount(total) {
                 const count = Number(total) || 0;
                 const badge = $("#notificationCount");
+                const clearAllButton = $("#clearAllNotificationsBtn");
                 if (count > 0) {
                     badge.text(count > 99 ? "99+" : count);
                     badge.removeClass("is-hidden");
+                    clearAllButton.prop("disabled", false);
                 } else {
                     badge.text("0");
                     badge.addClass("is-hidden");
+                    clearAllButton.prop("disabled", true);
                 }
             }
 
@@ -722,6 +768,59 @@
                     }
                 });
             };
+
+            $("#clearAllNotificationsBtn").on("click", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const $button = $(this);
+                if ($button.prop("disabled")) {
+                    return;
+                }
+
+                Swal.fire({
+                    title: "Remove all messages?",
+                    text: "This will clear every notification from the admin panel.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, remove all",
+                    cancelButtonText: "Cancel"
+                }).then(function (result) {
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+
+                    $button.prop("disabled", true).text("Removing...");
+
+                    $.ajax({
+                        url: removeAllQueueMessagesUrl,
+                        type: "POST",
+                        success: function (response) {
+                            if (response && response.success) {
+                                window.loadQueueMessages();
+                                Swal.fire({
+                                    title: "Cleared",
+                                    text: "All notifications were removed.",
+                                    icon: "success",
+                                    timer: 1200,
+                                    showConfirmButton: false
+                                });
+                                return;
+                            }
+
+                            Swal.fire("Error", "Unable to remove all notifications.", "error");
+                            window.loadQueueMessages();
+                        },
+                        error: function () {
+                            Swal.fire("Error", "Unable to remove all notifications.", "error");
+                            window.loadQueueMessages();
+                        },
+                        complete: function () {
+                            $button.text("Remove All");
+                        }
+                    });
+                });
+            });
 
             loadQueueMessages();
 

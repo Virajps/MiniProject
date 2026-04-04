@@ -17,5 +17,9 @@ namespace Repositories.Services
         Task SetOtpVerified(string email);
         Task<bool> IsOtpVerified(string email);
         Task RemoveOtpVerified(string email);
+
+        Task RemoveUserAsync(string email);
+        Task RemoveUserByIdAsync(int employeeId);
+
     }
 }

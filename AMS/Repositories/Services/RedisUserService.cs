@@ -36,9 +36,14 @@ namespace Repositories.Services
             };
 
             var redisKey = GetRedisKey(user.Email);
+            var employeeIdKey = GetEmployeeIdRedisKey(user.EmployeeId);
             var payload = JsonSerializer.Serialize(cacheUser);
 
             await _database.StringSetAsync(redisKey, payload, TimeSpan.FromMinutes(30));//Time for remove from cache
+            if (user.EmployeeId > 0)
+            {
+                await _database.StringSetAsync(employeeIdKey, payload, TimeSpan.FromMinutes(30));
+            }
         }
 
         public async Task<t_Employee?> GetUserAsync(string email)
@@ -55,6 +60,26 @@ namespace Repositories.Services
             }
 
             return JsonSerializer.Deserialize<t_Employee>(redisValue!);
+        }
+
+        public async Task RemoveUserAsync(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return;
+            }
+
+            await _database.KeyDeleteAsync(GetRedisKey(email));
+        }
+
+        public async Task RemoveUserByIdAsync(int employeeId)
+        {
+            if (employeeId <= 0)
+            {
+                return;
+            }
+
+            await _database.KeyDeleteAsync(GetEmployeeIdRedisKey(employeeId));
         }
 
         private static string GetEmployeeIdRedisKey(int employeeId)
