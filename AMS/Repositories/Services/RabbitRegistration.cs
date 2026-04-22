@@ -175,6 +175,7 @@ namespace Repositories.Services
 
                 if (shouldRemove)
                 {
+                    await ClearNotificationCacheAsync(queueName, rawMessage);
                     removed = true;
                     continue;
                 }
@@ -191,6 +192,18 @@ namespace Repositories.Services
             }
 
             return removed;
+        }
+
+        public async Task<bool> RemoveAllNotificationsAsync()
+        {
+            using var connection = await GetConnection();
+            using var channel = await connection.CreateChannelAsync();
+
+            await ClearQueueAsync(channel, RegistrationQueueName);
+            await ClearQueueAsync(channel, AttendanceQueueName);
+            NotificationMap.Clear();
+
+            return true;
         }
 
         private async Task<List<QueueNotificationItem>> ReadQueueMessagesAsync(string queueName, string notificationType)
@@ -231,6 +244,46 @@ namespace Repositories.Services
             }
 
             return notifications;
+        }
+
+        private async Task ClearNotificationCacheAsync(string queueName, string rawMessage)
+        {
+            if (string.Equals(queueName, RegistrationQueueName, StringComparison.Ordinal))
+            {
+                using var document = JsonDocument.Parse(rawMessage);
+                var root = document.RootElement;
+
+                if (root.TryGetProperty("Email", out var emailElement))
+                {
+                    var email = emailElement.GetString();
+                    if (!string.IsNullOrWhiteSpace(email))
+                    {
+                        await _redisUserService.RemoveUserAsync(email);
+                    }
+                }
+
+                if (root.TryGetProperty("EmployeeId", out var employeeIdElement) &&
+                    employeeIdElement.TryGetInt32(out var registrationEmployeeId))
+                {
+                    await _redisUserService.RemoveUserByIdAsync(registrationEmployeeId);
+                }
+
+                return;
+            }
+
+            if (!string.Equals(queueName, AttendanceQueueName, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            using var attendanceDocument = JsonDocument.Parse(rawMessage);
+            var attendanceRoot = attendanceDocument.RootElement;
+
+            if (!attendanceRoot.TryGetProperty("EmployeeId", out var employeeElement) ||
+                !employeeElement.TryGetInt32(out var employeeId))
+            {
+                return;
+            }
         }
 
         private async Task<QueueNotificationItem> BuildNotificationAsync(string queueName, string notificationType, string rawMessage)
@@ -323,46 +376,46 @@ namespace Repositories.Services
             return parsedTime.ToLocalTime().ToString("dd-MM-yyyy hh:mm tt");
         }
 
-        private static string BuildNotificationId(string queueName, string rawMessage)
+        private static async Task ClearQueueAsync(IChannel channel, string queueName)
         {
-            return $"{queueName}|{Convert.ToHexString(Encoding.UTF8.GetBytes(rawMessage))}";
+            await channel.QueueDeclareAsync(
+                queue: queueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
+
+            await channel.QueuePurgeAsync(queueName);
         }
 
-        private static string GetQueueNameFromNotificationId(string notificationId)
-        {
-            var parts = notificationId.Split('|', 2, StringSplitOptions.None);
-            return parts.Length == 2 ? parts[0] : string.Empty;
-        }
+        // private static string BuildNotificationId(string queueName, string rawMessage)
+        // {
+        //     return $"{queueName}|{Convert.ToHexString(Encoding.UTF8.GetBytes(rawMessage))}";
+        // }
 
-        private static string GetRawMessageFromNotificationId(string notificationId)
-        {
-            var parts = notificationId.Split('|', 2, StringSplitOptions.None);
-            if (parts.Length != 2)
-            {
-                return string.Empty;
-            }
+        // private static string GetQueueNameFromNotificationId(string notificationId)
+        // {
+        //     var parts = notificationId.Split('|', 2, StringSplitOptions.None);
+        //     return parts.Length == 2 ? parts[0] : string.Empty;
+        // }
 
-            try
-            {
-                return Encoding.UTF8.GetString(Convert.FromHexString(parts[1]));
-            }
-            catch
-            {
-                return string.Empty;
-            }
-        }
+        // private static string GetRawMessageFromNotificationId(string notificationId)
+        // {
+        //     var parts = notificationId.Split('|', 2, StringSplitOptions.None);
+        //     if (parts.Length != 2)
+        //     {
+        //         return string.Empty;
+        //     }
+
+        //     try
+        //     {
+        //         return Encoding.UTF8.GetString(Convert.FromHexString(parts[1]));
+        //     }
+        //     catch
+        //     {
+        //         return string.Empty;
+        //     }
+        // }
 
     }
  }
-
-
-
-
-
-
-
-
-
-       
-      
-        

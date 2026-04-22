@@ -139,7 +139,7 @@ namespace MyApp.Namespace
         }
 
         [HttpGet]
-        public async Task<IActionResult> AccessControlData()
+        public async Task<IActionResult> AccessControlData(string? employeeName, int skip = 0, int take = 10)
         {
             var role = HttpContext.Session.GetString("Role");
             if (role != "Admin")
@@ -149,7 +149,30 @@ namespace MyApp.Namespace
             else
             {
                 var result = await _dashboardRepository.GetAllUsersForAccess();
-                return Ok(new { success = true, data = result });
+
+                if (!string.IsNullOrWhiteSpace(employeeName))
+                {
+                    result = result
+                        .Where(x => !string.IsNullOrWhiteSpace(x.Name) &&
+                                    x.Name.Contains(employeeName, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
+
+                var total = result.Count;
+                var data = result
+                    .Skip(skip)
+                    .Take(take)
+                    .Select(x => new
+                    {
+                        employeeId = x.EmployeeId,
+                        employeeName = x.Name,
+                        email = x.Email,
+                        totalWorkingHours = string.IsNullOrWhiteSpace(x.TotalHour) ? "0" : x.TotalHour,
+                        employeeStatus = x.Status
+                    })
+                    .ToList();
+
+                return Ok(new { success = true, data, total });
             }
         }
 
@@ -352,6 +375,19 @@ namespace MyApp.Namespace
             }
 
             var removed = await _rabbitRegistration.RemoveNotificationAsync(notificationId);
+            return Ok(new { success = removed });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RemoveAllQueueMessages()
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+            {
+                return RedirectToAction("Unauthorized", "User");
+            }
+
+            var removed = await _rabbitRegistration.RemoveAllNotificationsAsync();
             return Ok(new { success = removed });
         }
 
